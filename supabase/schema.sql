@@ -117,6 +117,35 @@ create trigger trg_historico_preco
 after insert or update of preco, preco_antigo on public.produtos
 for each row execute function public.registrar_historico_preco();
 
+-- ============ CENTRAL DE ANÚNCIOS ============
+-- Histórico das peças geradas (produto, formato, modelo, campanha, texto).
+-- Cliques por criativo via cliques.anuncio_id (comparar A/B por dados reais).
+create table if not exists public.anuncios (
+  id uuid primary key default gen_random_uuid(),
+  produto_id uuid not null references public.produtos(id) on delete cascade,
+  formato text not null,
+  modelo text not null,
+  campanha text,
+  texto text,
+  admin_user_id uuid references auth.users(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists anuncios_produto_id_idx on public.anuncios(produto_id);
+create index if not exists anuncios_created_at_idx on public.anuncios(created_at);
+
+alter table public.anuncios enable row level security;
+
+drop policy if exists "Admin gerencia anuncios" on public.anuncios;
+create policy "Admin gerencia anuncios"
+on public.anuncios for all
+to authenticated
+using (public.is_admin())
+with check (public.is_admin());
+
+alter table public.cliques add column if not exists anuncio_id uuid references public.anuncios(id) on delete set null;
+create index if not exists cliques_anuncio_id_idx on public.cliques(anuncio_id);
+
 alter table public.produtos enable row level security;
 alter table public.cliques enable row level security;
 

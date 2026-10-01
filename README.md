@@ -106,6 +106,24 @@ ACHADINHOS_TIKTOK, ACHADINHOS_WHATSAPP, ACHADINHOS_FACEBOOK,
 ACHADINHOS_YOUTUBE, ACHADINHOS_PINTEREST. Páginas de campanha:
 `/campanha/[canal]`.
 
+## 8. Central de Anúncios 📣
+
+- **🪄 Gerar anúncio** (na linha do produto ou em `/admin/anuncios/novo`):
+  escolhe produto, formato (Feed/Stories/WhatsApp/Pinterest), modelo (A/B/C)
+  e canal. Gera arte em canvas no navegador (sem API externa), 5 versões de
+  texto só com dados reais, download PNG, compartilhar (Web Share API),
+  copiar texto/link. **Salvar no histórico** gera o link medido
+  (`/sair/ID?origem=CANAL&anuncio=ID`).
+- **🖼️ Gerar 5 artes** (`/admin/anuncios/lote`): selecione exatamente 5
+  produtos, distribua modelos A/B/C, baixe individual ou tudo em ZIP
+  (`achadinhobr-produto-01..05.png`), "Gerar novamente" alterna os modelos.
+  Produtos sem imagem/preço válido são bloqueados com o motivo.
+- **Central** (`/admin/anuncios`): histórico com produto, formato, modelo,
+  campanha, data e **cliques por criativo** (via `cliques.anuncio_id`),
+  com filtros por produto, período e canal. Cliques ≠ vendas.
+- Segurança: tabela `anuncios` com RLS só-admin (`is_admin()`); sem acesso público.
+- Dependência nova: `jszip` (MIT, gratuita) para o ZIP.
+
 ## 7. Segurança
 
 A senha nunca fica no código.

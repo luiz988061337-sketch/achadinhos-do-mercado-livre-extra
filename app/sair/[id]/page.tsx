@@ -14,7 +14,7 @@ export default async function SairPage({
   searchParams
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ origem?: string }>;
+  searchParams: Promise<{ origem?: string; anuncio?: string }>;
 }) {
   const { id } = await params;
   const sp = await searchParams;
@@ -35,15 +35,31 @@ export default async function SairPage({
   const forwarded = heads.get("x-forwarded-for");
   const ipLimpo = forwarded?.split(",")[0]?.trim() || null;
 
-  await supabase.from("cliques").insert({
+  // Criativo (A/B): só registra se o anúncio existir de verdade.
+  let anuncioId: string | null = null;
+  if (sp.anuncio && /^[0-9a-f-]{36}$/i.test(sp.anuncio)) {
+    const { data: an } = await supabase.from("anuncios").select("id").eq("id", sp.anuncio).single();
+    if (an) anuncioId = an.id;
+  }
+
+  const cliqueBase: any = {
     produto_id: produto.id,
     pagina_origem: heads.get("referer"),
+    user_agent: heads.get("user-agent"),
+    ip: null
+  };
+  const cliqueExtra: any = {
     origem,
     sessao_id: jar.get("ach_sid")?.value ?? null,
-    user_agent: heads.get("user-agent"),
-    ip: null,
     ip_hash: ipLimpo ? createHash("sha256").update(ipLimpo).digest("hex") : null
-  });
+  };
+  if (anuncioId) cliqueExtra.anuncio_id = anuncioId;
+
+  const primeira = await supabase.from("cliques").insert({ ...cliqueBase, ...cliqueExtra });
+  if (primeira.error && /anuncio_id|origem|sessao_id|ip_hash/i.test(primeira.error.message)) {
+    // Banco ainda sem as colunas novas (migração pendente): registra o mínimo.
+    await supabase.from("cliques").insert(cliqueBase);
+  }
 
   let destinoHost = "";
   try {
