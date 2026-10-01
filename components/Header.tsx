@@ -7,14 +7,14 @@ export default function Header() {
       <header className="header">
         <div className="container headerRow">
           <Link href="/" className="logo">🛒 Achadinhos<span>BR</span></Link>
-          <form className="search" action="/ofertas">
-            <input name="q" placeholder="Buscar produtos..." />
+          <form className="search" action="/ofertas" role="search">
+            <input name="q" placeholder="Buscar produtos..." aria-label="Buscar produtos" />
             <button aria-label="Buscar">🔎</button>
           </form>
           <Link href="/admin" className="adminLink">Painel</Link>
         </div>
       </header>
-      <nav className="nav">
+      <nav className="nav" aria-label="Navegação principal">
         <div className="container navRow">
           <Link href="/">Início</Link>
           <Link href="/ofertas">🔥 Ofertas</Link>
@@ -25,7 +25,7 @@ export default function Header() {
           <Link href="/categoria/ferramentas">🔧 Ferramentas</Link>
         </div>
       </nav>
-      <div className="ticker"><span className="tickerInner">🔥 <b>OFERTAS ATUALIZADAS</b> &nbsp;•&nbsp; 💸 <b>DESCONTO REAL</b> &nbsp;•&nbsp; 🔒 <b>COMPRA SEGURA NO MERCADO LIVRE</b> &nbsp;•&nbsp; ⚡ <b>APROVEITE ANTES QUE O PREÇO MUDE</b> &nbsp;•&nbsp; 🔥 <b>OFERTAS ATUALIZADAS</b> &nbsp;•&nbsp; 💸 <b>DESCONTO REAL</b> &nbsp;•&nbsp; 🔒 <b>COMPRA SEGURA NO MERCADO LIVRE</b> &nbsp;•&nbsp; ⚡ <b>APROVEITE ANTES QUE O PREÇO MUDE</b> &nbsp;•&nbsp; </span></div>
+      <div className="ticker" aria-hidden="true"><span className="tickerInner">🔥 <b>OFERTAS ATUALIZADAS</b> &nbsp;•&nbsp; 💸 <b>DESCONTO REAL</b> &nbsp;•&nbsp; 🔒 <b>COMPRA SEGURA NO MERCADO LIVRE</b> &nbsp;•&nbsp; ⚡ <b>APROVEITE ANTES QUE O PREÇO MUDE</b> &nbsp;•&nbsp; 🔥 <b>OFERTAS ATUALIZADAS</b> &nbsp;•&nbsp; 💸 <b>DESCONTO REAL</b> &nbsp;•&nbsp; 🔒 <b>COMPRA SEGURA NO MERCADO LIVRE</b> &nbsp;•&nbsp; ⚡ <b>APROVEITE ANTES QUE O PREÇO MUDE</b> &nbsp;•&nbsp; </span></div>
     </>
   );
 }
