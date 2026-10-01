@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function Header() {
   return (
     <>
-      <div className="topbar">Ofertas e achadinhos selecionados todos os dias</div>
+      <div className="topbar">🔥 Ofertas garimpadas todo dia — o preço pode mudar a qualquer momento, aproveite!</div>
       <header className="header">
         <div className="container headerRow">
           <Link href="/" className="logo">🛒 Achadinhos<span>BR</span></Link>
@@ -25,6 +25,7 @@ export default function Header() {
           <Link href="/categoria/ferramentas">🔧 Ferramentas</Link>
         </div>
       </nav>
+      <div className="ticker"><span className="tickerInner">🔥 <b>OFERTAS ATUALIZADAS</b> &nbsp;•&nbsp; 💸 <b>DESCONTO REAL</b> &nbsp;•&nbsp; 🔒 <b>COMPRA SEGURA NO MERCADO LIVRE</b> &nbsp;•&nbsp; ⚡ <b>APROVEITE ANTES QUE O PREÇO MUDE</b> &nbsp;•&nbsp; 🔥 <b>OFERTAS ATUALIZADAS</b> &nbsp;•&nbsp; 💸 <b>DESCONTO REAL</b> &nbsp;•&nbsp; 🔒 <b>COMPRA SEGURA NO MERCADO LIVRE</b> &nbsp;•&nbsp; ⚡ <b>APROVEITE ANTES QUE O PREÇO MUDE</b> &nbsp;•&nbsp; </span></div>
     </>
   );
 }
