@@ -2,6 +2,7 @@ export type Produto = {
   id: string;
   slug: string;
   nome: string;
+  descricao: string | null;
   imagem: string;
   preco: number;
   preco_antigo: number | null;
@@ -10,9 +11,14 @@ export type Produto = {
   categoria_slug: string;
   avaliacao: number;
   avaliacoes: number;
-  destaque: boolean;
-  link_afiliado: string;
+  link_produto: string | null;
+  link_afiliado: string | null;
+  ml_product_id: string | null;
   ativo: boolean;
+  destaque: boolean;
+  prioridade: number;
+  preco_atualizado_em: string | null;
+  verificado_em: string | null;
   created_at?: string;
 };
 

@@ -1,38 +1,56 @@
 # AchadinhosBR V2 — Next.js + Supabase
 
-Versão 2 do site de afiliados.
+Plataforma de afiliados do Mercado Livre: curadoria de ofertas, saída
+transparente para o ML e métricas de cliques por produto/canal.
 
 ## Recursos
 
-- Next.js
-- Supabase Database
-- Supabase Auth por e-mail/senha
-- Painel administrativo protegido
-- Cadastro, edição e exclusão de produtos
-- Produtos ativos públicos
-- Link intermediário `/go/[id]`
-- Rastreamento de cliques
-- Dashboard com contagem de cliques
-- RLS no Supabase
+- Next.js + Supabase Database + Auth por e-mail/senha
+- Painel administrativo protegido (RLS por tabela `admin_users` + checagem no layout)
+- Cadastro, edição, ativação e exclusão de produtos
+- Validação de link de afiliado (bloqueia homepage, busca, carrinho, links genéricos)
+- Importação assistida: cola o link, valida e extrai o ID do anúncio (MLB...)
+- Fluxo de saída `/sair/[id]`: registra o clique e mostra o destino antes de continuar (sem redirect automático)
+- Rastreamento de cliques (produto, data/hora, origem, canal, sessão anônima)
+- Dashboard com métricas e gráficos: hoje/ontem/7d/30d, top produtos, categorias, canais
+- Carrossel de destaques + seção "Em alta" (mais clicados, dados reais)
+- Compartilhamento (WhatsApp/Telegram/Facebook/copiar + Web Share API) com etiqueta de canal
+- Páginas de campanha `/campanha/[canal]` com canonical para `/ofertas`
+- Paginação e ordenação (recentes, desconto, preço, mais clicados) em ofertas e categorias
+- SEO: metadata, Open Graph, canonical, JSON-LD, sitemap, robots, favicon
+- Páginas: Sobre, Como funciona, Aviso de afiliado, Contato, Privacidade, Termos
 
 ## 1. Criar projeto no Supabase
 
 Crie um projeto no Supabase.
 
-Depois abra **SQL Editor**, cole todo o conteúdo de:
+Instalação nova: abra **SQL Editor**, cole todo o conteúdo de:
 
 `supabase/schema.sql`
 
 e execute.
+
+Banco existente (v1/v2): execute `supabase/migracao-v3.sql` UMA vez, na ordem
+do arquivo. Ele cria `admin_users`, adiciona as colunas novas, desativa os
+produtos de exemplo com link genérico (mostra quais no resultado) e cadastra
+o administrador pelo e-mail.
 
 ## 2. Criar o usuário administrador
 
 No Supabase:
 **Authentication → Users → Add user**
 
-Crie seu e-mail e senha.
+Crie seu e-mail e senha. Depois garanta o registro em `admin_users`:
 
-Este projeto usa usuários autenticados como administradores. Para um único administrador, é recomendável adicionar uma regra de RLS específica ao seu e-mail antes de colocar o site em produção.
+```sql
+insert into public.admin_users (user_id, role)
+select id, 'admin' from auth.users where email = 'voce@exemplo.com'
+on conflict (user_id) do nothing;
+```
+
+Somente quem está em `admin_users` passa nas policies de escrita. A checagem
+de e-mail no `app/admin/layout.tsx` (`ADMIN_EMAILS`) é defesa extra, não a
+proteção real — a proteção real é o RLS.
 
 ## 3. Variáveis de ambiente
 
@@ -40,6 +58,7 @@ Copie `.env.example` para `.env.local`:
 
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+ADMIN_EMAILS=voce@exemplo.com
 
 Pegue esses valores em:
 Supabase → Project Settings → API.
@@ -68,25 +87,32 @@ Na Vercel, adicione as mesmas duas variáveis:
 - NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 Depois faça redeploy.
-
 ## 6. Como funciona o rastreamento
 
-O botão "VER OFERTA" aponta para:
+Os botões de oferta apontam para:
 
-`/go/ID_DO_PRODUTO`
+`/sair/ID_DO_PRODUTO`
 
-O servidor:
-1. procura o produto;
-2. grava um clique;
-3. redireciona para o link de afiliado.
+A página de saída:
+
+1. registra o clique (produto, data/hora, página de origem, canal `?origem=`, sessão anônima);
+2. mostra o produto e o destino no Mercado Livre com transparência;
+3. só leva ao link de afiliado se o visitante clicar em continuar.
+
+`/go/ID_DO_PRODUTO` existe por compatibilidade e só encaminha para `/sair`.
+
+Canais suportados (`?origem=`): ACHADINHOS_SITE, ACHADINHOS_INSTAGRAM,
+ACHADINHOS_TIKTOK, ACHADINHOS_WHATSAPP, ACHADINHOS_FACEBOOK,
+ACHADINHOS_YOUTUBE, ACHADINHOS_PINTEREST. Páginas de campanha:
+`/campanha/[canal]`.
 
 ## 7. Segurança
 
 A senha nunca fica no código.
 A autenticação é feita pelo Supabase.
-As tabelas usam Row Level Security.
-
-Antes de colocar em produção, limite as policies administrativas a usuários/roles autorizados.
+As tabelas usam Row Level Security com `admin_users` + `is_admin()`.
+Não guardamos IP original (só hash) nem dados pessoais além do necessário.
+Cliques não significam vendas: consulte a Central de Afiliados do ML.
 
 ## Próximas melhorias
 
