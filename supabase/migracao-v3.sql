@@ -159,7 +159,9 @@ on public.cliques for select to authenticated using (public.is_admin());
 -- "Registrar clique público" são mantidas como estão.)
 
 -- ===== 7. View do dashboard com categoria (FASE 5) =====
-create or replace view public.produto_cliques
+-- DROP antes do CREATE: OR REPLACE não permite mudar as colunas da view antiga.
+drop view if exists public.produto_cliques;
+create view public.produto_cliques
 with (security_invoker = true)
 as
 select
