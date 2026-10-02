@@ -1,14 +1,14 @@
 // Integração Mercado Livre — API OFICIAL (somente leitura, server-only).
 // Docs: https://developers.mercadolivre.com.br
-// - Busca: GET https://api.mercadolibre.com/sites/MLB/search?q=...&limit=...
-// - Item:  GET https://api.mercadolibre.com/items/MLB123
-// - Auth: o ML exige app oficial (client_credentials) para leitura via API.
-//   Configure ML_CLIENT_ID + ML_CLIENT_SECRET (ou ML_ACCESS_TOKEN pronto).
-//   Sem credenciais a API responde 403 — a busca retorna erro amigável.
+// - Descoberta: GET /products/search (CATÁLOGO: nome, imagem, categoria).
+//   A busca de ANÚNCIOS com preço (/sites/MLB/search) está bloqueada pelo ML
+//   para qualquer token (403) — por isso o preço/link vão por curadoria.
+// - Item: GET /items/MLB123 (quando disponível, enriquece preço).
+// - Auth: app token via client_credentials; user token opcional (OAuth).
 // REGRAS:
 // - Nunca transformar link comum em link de afiliado por método não oficial.
 // - affiliate_url fica NULL até o admin colar o link oficial da Central de Afiliados.
-// - url = permalink oficial retornado pela API (prova de fonte oficial).
+// - price=0 + url="" significa "a preencher na aprovação" (só existe em pending).
 
 import { calcularScore } from "@/lib/score";
 
@@ -29,7 +29,7 @@ export type MlOfertaNormalizada = {
   score: number;
 };
 
-const ML_SEARCH = "https://api.mercadolibre.com/sites/MLB/search";
+const ML_CATALOG_SEARCH = "https://api.mercadolibre.com/products/search";
 const ML_ITEM = "https://api.mercadolibre.com/items";
 const ML_OAUTH = "https://api.mercadolibre.com/oauth/token";
 
@@ -89,7 +89,7 @@ function erroMl(status: number, temUserToken: boolean): Error {
     return new MlNaoConfigurado(
       temUserToken
         ? "ML recusou a busca mesmo conectado. Confira os escopos do app e tente reconectar."
-        : "Busca ML exige conta conectada. No painel, clique em “Conectar Mercado Livre” e autorize com sua conta."
+        : "ML exigiu autenticação. Configure ML_CLIENT_ID + ML_CLIENT_SECRET no servidor (app oficial)."
     );
   }
   return new Error(`ML search falhou: ${status}`);
@@ -103,7 +103,9 @@ function num(v: unknown): number {
 export async function buscarML(termo: string, limit = 20, userToken?: string | null): Promise<MlOfertaNormalizada[]> {
   const q = (termo || "").trim();
   if (!q) return [];
-  const res = await fetch(`${ML_SEARCH}?q=${encodeURIComponent(q)}&limit=${clampLimit(limit)}`, {
+  // Catálogo oficial (funciona com app token). Traz nome/imagem/categoria;
+  // preço e link da oferta são preenchidos na aprovação (curadoria).
+  const res = await fetch(`${ML_CATALOG_SEARCH}?site_id=MLB&status=active&q=${encodeURIComponent(q)}&limit=${clampLimit(limit)}`, {
     headers: await headersMl(userToken),
     // Server-only: esta lib nunca é importada no cliente.
     cache: "no-store",
@@ -111,7 +113,7 @@ export async function buscarML(termo: string, limit = 20, userToken?: string | n
   if (!res.ok) throw erroMl(res.status, Boolean(userToken));
   const json = await res.json();
   const results: unknown[] = Array.isArray(json?.results) ? json.results : [];
-  return results.map((r) => normalizarMlResult(r as Record<string, unknown>)).filter((p): p is MlOfertaNormalizada => p !== null);
+  return results.map((r) => normalizarCatalogo(r as Record<string, unknown>)).filter((p): p is MlOfertaNormalizada => p !== null);
 }
 
 export async function detalharML(id: string, userToken?: string | null): Promise<MlOfertaNormalizada | null> {
@@ -133,6 +135,41 @@ function clampLimit(n: number): number {
 export function normalizarMlbId(valor: string): string | null {
   const m = (valor || "").match(/MLB-?(\d{4,})/i);
   return m ? `MLB${m[1]}` : null;
+}
+
+// Normaliza item do CATÁLOGO (/products/search): nome, imagem, categoria.
+// Preço e URL da oferta NÃO vêm no catálogo → ficam 0/"" ("a preencher"
+// na aprovação). Registro catalogado nunca é publicado sem curadoria.
+function normalizarCatalogo(it: Record<string, unknown>): MlOfertaNormalizada | null {
+  try {
+    const rawId = String(it.id ?? "");
+    const mlb = normalizarMlbId(rawId);
+    if (!mlb) return null;
+    const title = String(it.name ?? it.title ?? "").trim();
+    if (!title) return null;
+    const pics = Array.isArray(it.pictures) ? (it.pictures as { url?: unknown }[]) : [];
+    const image = String(pics[0]?.url || "").replace("http://", "https://");
+    if (!image.startsWith("https://")) return null;
+    const base = {
+      external_id: mlb,
+      title,
+      image,
+      price: 0,
+      old_price: null,
+      discount: null,
+      rating: 0,
+      reviews: 0,
+      sold: 0,
+      url: "",
+      affiliate_url: null,
+      marketplace: "mercadolivre" as const,
+      category: typeof it.domain_id === "string" ? it.domain_id : null,
+    };
+    const { score } = calcularScore({ ...base, rating: 0, reviews: 0 });
+    return { ...base, score };
+  } catch {
+    return null;
+  }
 }
 
 // Aceita tanto item de search quanto de items/:id (formatos levemente diferentes).

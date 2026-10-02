@@ -35,6 +35,9 @@ export async function obterTokenUsuario(supabase: {
   // Válido com margem de 5 min? Usa direto.
   if (new Date(row.expires_at).getTime() - Date.now() > 5 * 60 * 1000) return row.access_token;
 
+  // Sem refresh (ML nem sempre devolve) e expirado → pede reconexão.
+  if (!row.refresh_token) return null;
+
   // Renova via refresh_token (dura ~6 meses; renovações geram novo refresh).
   const clientId = (process.env.ML_CLIENT_ID || "").trim();
   const clientSecret = (process.env.ML_CLIENT_SECRET || "").trim();

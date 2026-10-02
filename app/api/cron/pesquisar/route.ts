@@ -53,8 +53,9 @@ export async function GET(req: Request) {
     }
     pesquisados += itens.length;
 
-    // Qualificação mínima: preço válido + imagem + url. Score recalculado.
-    const qualificados = itens.filter((it) => it.price > 0 && it.image.startsWith("https://") && it.url.startsWith("https://"));
+    // Qualificação mínima: imagem válida; catálogo ML pode vir sem preço/url
+    // (preenchidos na aprovação). Score recalculado.
+    const qualificados = itens.filter((it) => Number(it.price) >= 0 && it.image.startsWith("https://") && (it.url.startsWith("https://") || it.url === ""));
 
     for (const it of qualificados.slice(0, 15)) {
       const { score } = calcularScore({ price: it.price, old_price: it.old_price, discount: it.discount, sold: it.sold, rating: 0, reviews: 0 });

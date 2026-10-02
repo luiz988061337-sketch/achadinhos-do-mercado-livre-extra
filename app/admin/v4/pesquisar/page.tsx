@@ -25,8 +25,8 @@ export default async function PesquisarPage({ searchParams }: { searchParams: Pr
     {aviso ? <p className="notice">{aviso}</p> : null}
     <div className="notice">
       {conectado
-        ? <>🟢 Mercado Livre <strong>conectado</strong> (busca liberada). <Link href="/api/v4/ml/auth">Reconectar</Link></>
-        : <>🔴 Mercado Livre <strong>não conectado</strong> — a busca exige autorização. <Link href="/api/v4/ml/auth"><strong>Conectar Mercado Livre</strong></Link></>}
+        ? <>🟢 Mercado Livre <strong>conectado</strong>. <Link href="/api/v4/ml/auth">Reconectar</Link></>
+        : <>🔎 Busca ML via <strong>catálogo oficial</strong> (nome/imagem/categoria; preço na aprovação). <Link href="/api/v4/ml/auth"><strong>Conectar conta (opcional)</strong></Link></>}
     </div>
     <V4Pesquisa />
   </>;

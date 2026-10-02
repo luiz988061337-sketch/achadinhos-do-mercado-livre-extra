@@ -73,14 +73,14 @@ export default function V4Pesquisa() {
       </div>
     </div>
     {msg ? <p className="notice">{msg}</p> : null}
-    {mp === "mercadolivre" ? <p className="notice">ML: links comuns NUNCA viram afiliado automaticamente. O affiliate_url fica vazio até você colar o oficial.</p> : null}
+    {mp === "mercadolivre" ? <p className="notice">ML (catálogo oficial): traz nome, imagem e categoria. Preço e links são preenchidos na aprovação — links comuns NUNCA viram afiliado automaticamente.</p> : null}
     <div className="products">
       {itens.map((it) => <article key={it.external_id} className="card">
         <div className="cardImage"><img src={it.image} alt={it.title} loading="lazy" /></div>
         <div className="cardBody">
           <div className="cardTitle">{it.title}</div>
-          <div className="price">R$ {Number(it.price).toFixed(2)}</div>
-          <div style={{ fontSize: 12 }}>{it.external_id} · <a href={it.url} target="_blank" rel="noreferrer">ver origem</a></div>
+          <div className="price">{Number(it.price) > 0 ? `R$ ${Number(it.price).toFixed(2)}` : "💰 preço na aprovação"}</div>
+          <div style={{ fontSize: 12 }}>{it.external_id}{it.url ? <> · <a href={it.url} target="_blank" rel="noreferrer">ver origem</a></> : " · catálogo"}</div>
         </div>
       </article>)}
     </div>

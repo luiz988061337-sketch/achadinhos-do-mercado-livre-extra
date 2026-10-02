@@ -32,10 +32,12 @@ export async function POST(req: Request) {
     const it = raw as Record<string, unknown>;
     const external_id = String(it.external_id || "").trim();
     const title = String(it.title || "").trim();
-    const price = Number(it.price);
+    const price = Math.max(0, Number(it.price) || 0);
     const url = String(it.url || "").trim();
     const image = String(it.image || "").trim();
-    if (!external_id || !title || !(price > 0) || !url || !image) {
+    // Catálogo oficial pode vir sem preço/url (price=0/url=""): entra pending
+    // e o admin preenche preço + link da oferta na aprovação. Exige título/imagem.
+    if (!external_id || !title || !image) {
       pulados.push(external_id || title || "?");
       continue;
     }

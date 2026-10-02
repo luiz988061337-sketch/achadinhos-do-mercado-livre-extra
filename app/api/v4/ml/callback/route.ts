@@ -41,11 +41,13 @@ export async function GET(req: Request) {
   }
   const json = await res.json();
   const access = String(json?.access_token || "");
+  // O ML nem sempre devolve refresh_token (só com offline_access liberado).
+  // Salva mesmo assim: a busca usa o access (6h); sem refresh, expira e o
+  // painel pede reconexão. Nunca bloqueia o fluxo por causa disso.
   const refresh = String(json?.refresh_token || "");
-  if (!access || !refresh) {
-    console.error("[ml/callback] resposta sem tokens:", JSON.stringify(json).slice(0, 300));
-    const falta = !access && !refresh ? "sem-tokens" : "sem-refresh";
-    return NextResponse.redirect(`${base}/admin/v4/pesquisar?ml=falhatoken&motivo=${falta}`);
+  if (!access) {
+    console.error("[ml/callback] resposta sem access_token:", JSON.stringify(json).slice(0, 200));
+    return NextResponse.redirect(`${base}/admin/v4/pesquisar?ml=falhatoken&motivo=sem-access`);
   }
 
   const supabase = await createClient();
