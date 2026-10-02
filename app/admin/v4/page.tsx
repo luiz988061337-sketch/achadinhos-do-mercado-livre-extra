@@ -12,6 +12,7 @@ export default async function AdminV4() {
     { data: porMp },
     { data: top },
     { data: fila },
+    { data: comissoes },
   ] = await Promise.all([
     supabase.from("products").select("*", { count: "exact", head: true }).eq("status", "approved"),
     supabase.from("products").select("*", { count: "exact", head: true }).eq("status", "pending"),
@@ -20,10 +21,15 @@ export default async function AdminV4() {
     supabase.from("products").select("marketplace"),
     supabase.from("products").select("id,title,marketplace,score,price,status").eq("status", "approved").order("score", { ascending: false }).limit(10),
     supabase.from("whatsapp_queue").select("*", { count: "exact", head: true }).eq("status", "queued"),
+    supabase.from("products").select("id,title,marketplace,price,commission,commission_rate").eq("status", "approved").not("commission", "is", null).order("commission", { ascending: false }).limit(10),
   ]);
 
   const mpCount = new Map<string, number>();
   for (const p of porMp ?? []) mpCount.set(p.marketplace, (mpCount.get(p.marketplace) ?? 0) + 1);
+
+  // Comissão potencial = soma das comissões unitárias dos aprovados (estimativa).
+  const comList = (comissoes ?? []) as { id: string; title: string; marketplace: string; price: number; commission: number; commission_rate: number | null }[];
+  const totalComissao = comList.reduce((s, p) => s + Number(p.commission || 0), 0);
 
   return <>
     <h1>🆕 Painel V4 — Marketplaces</h1>
@@ -51,6 +57,18 @@ export default async function AdminV4() {
           <tr key={p.id}><td>{p.title}</td><td>{p.marketplace}</td><td>⭐ {p.score}</td><td>R$ {Number(p.price).toFixed(2)}</td></tr>)}
         {(top ?? []).length === 0 && <tr><td colSpan={4}>Nenhum produto aprovado ainda. Vá em Pesquisar.</td></tr>}
       </tbody></table></div>
+
+    <h2>💰 Comissões (estimativa)</h2>
+    <div className="adminGrid">
+      <div className="stat">Potencial unitário<strong>R$ {totalComissao.toFixed(2)}</strong><span style={{ fontSize: 12 }}>soma por venda de cada aprovado</span></div>
+      <div className="stat">Com comissão<strong>{comList.length} produtos</strong></div>
+    </div>
+    <div className="tableWrap"><table className="table"><thead><tr><th>Título</th><th>Loja</th><th>Taxa</th><th>Comissão</th></tr></thead>
+      <tbody>
+        {comList.map((p) => <tr key={p.id}><td>{p.title}</td><td>{p.marketplace}</td><td>{p.commission_rate !== null ? `${Number(p.commission_rate).toFixed(1)}%` : "—"}</td><td>R$ {Number(p.commission).toFixed(2)}</td></tr>)}
+        {comList.length === 0 && <tr><td colSpan={4}>Sem comissão cadastrada. Produtos Shopee trazem da API; no ML, confira a Central de Afiliados.</td></tr>}
+      </tbody></table></div>
+    <p className="notice">Estimativa por unidade vendida — cliques ≠ vendas. Vendas e comissões reais: Central de Afiliados de cada marketplace.</p>
 
     <h2>🧭 Atalhos V4</h2>
     <div className="adminGrid">
