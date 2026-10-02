@@ -158,6 +158,13 @@ function normalizarCatalogo(it: Record<string, unknown>): MlOfertaNormalizada | 
     if (!mlb) return null;
     const title = String(it.name ?? it.title ?? "").trim();
     if (!title) return null;
+    // Qualidade: título com a mesma palavra 4x+ (ex "cozinha, cozinha, cozinha…")
+    // é cadastro falho do catálogo, quase sempre sem oferta ativa.
+    const freq = new Map<string, number>();
+    for (const w of title.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2)) {
+      freq.set(w, (freq.get(w) ?? 0) + 1);
+    }
+    if ([...freq.values()].some((n) => n >= 4)) return null;
     const pics = Array.isArray(it.pictures) ? (it.pictures as { url?: unknown }[]) : [];
     const image = String(pics[0]?.url || "").replace("http://", "https://");
     if (!image.startsWith("https://")) return null;

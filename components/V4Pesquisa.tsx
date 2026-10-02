@@ -75,7 +75,7 @@ export default function V4Pesquisa() {
       </div>
     </div>
     {msg ? <p className="notice">{msg}</p> : null}
-    {mp === "mercadolivre" ? <p className="notice">ML (catálogo oficial): traz nome, imagem e categoria. Preço e links são preenchidos na aprovação — links comuns NUNCA viram afiliado automaticamente.</p> : null}
+    {mp === "mercadolivre" ? <p className="notice">ML (catálogo oficial): confira a <strong>disponibilidade na página do produto</strong> antes de importar — rejeite os sem oferta ativa. Preço e links vão na aprovação.</p> : null}
     <div className="products">
       {itens.map((it) => <article key={it.external_id} className="card">
         <div className="cardImage"><img src={it.image} alt={it.title} loading="lazy" /></div>
