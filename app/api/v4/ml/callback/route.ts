@@ -32,7 +32,12 @@ export async function GET(req: Request) {
   if (!res.ok) {
     const detalhe = await res.text().catch(() => "");
     console.error("[ml/callback] token falhou:", res.status, detalhe.slice(0, 300));
-    return NextResponse.redirect(`${base}/admin/v4/pesquisar?ml=falhatoken`);
+    let motivo = `http${res.status}`;
+    try {
+      const j = JSON.parse(detalhe);
+      if (j?.error) motivo = String(j.error).slice(0, 60);
+    } catch { /* mantém httpXXX */ }
+    return NextResponse.redirect(`${base}/admin/v4/pesquisar?ml=falhatoken&motivo=${encodeURIComponent(motivo)}`);
   }
   const json = await res.json();
   const access = String(json?.access_token || "");

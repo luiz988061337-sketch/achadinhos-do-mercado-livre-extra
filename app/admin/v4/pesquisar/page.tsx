@@ -10,9 +10,11 @@ const MSG: Record<string, string> = {
   errobanco: "⚠️ Conectou no ML mas falhou ao salvar. Rode a migração ml-oauth no Supabase.",
 };
 
-export default async function PesquisarPage({ searchParams }: { searchParams: Promise<{ ml?: string }> }) {
+export default async function PesquisarPage({ searchParams }: { searchParams: Promise<{ ml?: string; motivo?: string }> }) {
   const sp = await searchParams;
-  const aviso = sp.ml ? MSG[sp.ml] : null;
+  const motivo = sp.motivo ? ` (motivo: ${sp.motivo})` : "";
+  const base = sp.ml ? MSG[sp.ml] : null;
+  const aviso = base ? base + motivo : motivo ? `⚠️ Falha ao conectar${motivo}.` : null;
   const supabase = await createClient();
   const { count } = await supabase.from("ml_tokens").select("*", { count: "exact", head: true });
   const conectado = (count ?? 0) > 0;
