@@ -21,12 +21,14 @@ export default function V4Pesquisa() {
   const [itens, setItens] = useState<Item[]>([]);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  // Marketplace → segmento da rota: mercadolivre→ml, shopee→shopee.
+  const rota = mp === "mercadolivre" ? "ml" : "shopee";
 
   async function buscar() {
     setBusy(true);
     setMsg("");
     try {
-      const r = await fetch(`/api/v4/${mp}/search?q=${encodeURIComponent(termo)}&limit=20`);
+      const r = await fetch(`/api/v4/${rota}/search?q=${encodeURIComponent(termo)}&limit=20`);
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || "Falha na busca.");
       setItens(j.itens || []);
@@ -42,7 +44,7 @@ export default function V4Pesquisa() {
     if (itens.length === 0) return;
     setBusy(true);
     try {
-      const r = await fetch(`/api/v4/${mp}/import`, {
+      const r = await fetch(`/api/v4/${rota}/import`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ itens }),
