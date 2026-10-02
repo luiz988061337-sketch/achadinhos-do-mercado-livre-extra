@@ -42,7 +42,11 @@ export async function GET(req: Request) {
   const json = await res.json();
   const access = String(json?.access_token || "");
   const refresh = String(json?.refresh_token || "");
-  if (!access || !refresh) return NextResponse.redirect(`${base}/admin/v4/pesquisar?ml=falhatoken`);
+  if (!access || !refresh) {
+    console.error("[ml/callback] resposta sem tokens:", JSON.stringify(json).slice(0, 300));
+    const falta = !access && !refresh ? "sem-tokens" : "sem-refresh";
+    return NextResponse.redirect(`${base}/admin/v4/pesquisar?ml=falhatoken&motivo=${falta}`);
+  }
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
