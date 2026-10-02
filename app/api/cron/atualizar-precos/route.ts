@@ -23,6 +23,13 @@ export async function GET(req: Request) {
   const limite = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") || "30")));
 
   const supabase = await createAdminClient();
+  let userToken: string | null = null;
+  try {
+    const { obterTokenUsuario } = await import("@/lib/ml-user");
+    userToken = await obterTokenUsuario(supabase as never);
+  } catch {
+    userToken = null;
+  }
   const { data: prods } = await supabase
     .from("products")
     .select("id, external_id, price, old_price, marketplace, status")
@@ -38,7 +45,7 @@ export async function GET(req: Request) {
   for (const p of prods ?? []) {
     if (!p.external_id) continue;
     try {
-      const det = await detalharML(p.external_id);
+      const det = await detalharML(p.external_id, userToken);
       if (!det) continue;
       const precoAntigo = Number(p.price);
       const mudou = det.price !== precoAntigo;

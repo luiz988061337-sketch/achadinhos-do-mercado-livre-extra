@@ -72,17 +72,24 @@ async function obterToken(): Promise<string | null> {
   return token;
 }
 
-async function headersMl(): Promise<Record<string, string>> {
+async function headersMl(userToken?: string | null): Promise<Record<string, string>> {
   const h: Record<string, string> = { Accept: "application/json", "User-Agent": UA };
+  // Preferência: user token (conta conectada) — único que libera a search.
+  if (userToken) {
+    h.Authorization = `Bearer ${userToken}`;
+    return h;
+  }
   const token = await obterToken().catch(() => null);
   if (token) h.Authorization = `Bearer ${token}`;
   return h;
 }
 
-function erroMl(status: number): Error {
+function erroMl(status: number, temUserToken: boolean): Error {
   if (status === 401 || status === 403) {
     return new MlNaoConfigurado(
-      "Mercado Livre exigiu autenticação (403). Crie um app em developers.mercadolivre.com.br e configure ML_CLIENT_ID + ML_CLIENT_SECRET nas envs do servidor."
+      temUserToken
+        ? "ML recusou a busca mesmo conectado. Confira os escopos do app e tente reconectar."
+        : "Busca ML exige conta conectada. No painel, clique em “Conectar Mercado Livre” e autorize com sua conta."
     );
   }
   return new Error(`ML search falhou: ${status}`);
@@ -93,26 +100,26 @@ function num(v: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-export async function buscarML(termo: string, limit = 20): Promise<MlOfertaNormalizada[]> {
+export async function buscarML(termo: string, limit = 20, userToken?: string | null): Promise<MlOfertaNormalizada[]> {
   const q = (termo || "").trim();
   if (!q) return [];
   const res = await fetch(`${ML_SEARCH}?q=${encodeURIComponent(q)}&limit=${clampLimit(limit)}`, {
-    headers: await headersMl(),
+    headers: await headersMl(userToken),
     // Server-only: esta lib nunca é importada no cliente.
     cache: "no-store",
   });
-  if (!res.ok) throw erroMl(res.status);
+  if (!res.ok) throw erroMl(res.status, Boolean(userToken));
   const json = await res.json();
   const results: unknown[] = Array.isArray(json?.results) ? json.results : [];
   return results.map((r) => normalizarMlResult(r as Record<string, unknown>)).filter((p): p is MlOfertaNormalizada => p !== null);
 }
 
-export async function detalharML(id: string): Promise<MlOfertaNormalizada | null> {
+export async function detalharML(id: string, userToken?: string | null): Promise<MlOfertaNormalizada | null> {
   const mlb = normalizarMlbId(id);
   if (!mlb) return null;
-  const res = await fetch(`${ML_ITEM}/${mlb}`, { headers: await headersMl(), cache: "no-store" });
+  const res = await fetch(`${ML_ITEM}/${mlb}`, { headers: await headersMl(userToken), cache: "no-store" });
   if (!res.ok) {
-    if (res.status === 401 || res.status === 403) throw erroMl(res.status);
+    if (res.status === 401 || res.status === 403) throw erroMl(res.status, Boolean(userToken));
     return null;
   }
   const it = await res.json();

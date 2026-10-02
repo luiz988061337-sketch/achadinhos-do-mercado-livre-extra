@@ -31,6 +31,13 @@ export async function GET(req: Request) {
 
   const autoPublish = (process.env.ALLOW_AUTO_PUBLISH || "").toLowerCase() === "true";
   const supabase = await createAdminClient();
+  let userToken: string | null = null;
+  try {
+    const { obterTokenUsuario } = await import("@/lib/ml-user");
+    userToken = await obterTokenUsuario(supabase as never);
+  } catch {
+    userToken = null;
+  }
   let pesquisados = 0;
   let pendentes = 0;
   const pulados: string[] = [];
@@ -39,7 +46,7 @@ export async function GET(req: Request) {
   for (const termo of termos.slice(0, 5)) {
     let itens: Awaited<ReturnType<typeof buscarML>> = [];
     try {
-      itens = await buscarML(termo, 15);
+      itens = await buscarML(termo, 15, userToken);
     } catch (e) {
       erros.push(`${termo}: ${e instanceof Error ? e.message : "falha ML"}`);
       continue;
