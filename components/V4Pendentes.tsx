@@ -35,9 +35,10 @@ export default function V4Pendentes({ iniciais }: { iniciais: V4Product[] }) {
   return <div>
     {msg ? <p className="notice">{msg}</p> : null}
     <div className="tableWrap"><table className="table">
-      <thead><tr><th>Oferta</th><th>Loja</th><th>Score</th><th>Preço R$</th><th>Link oferta</th><th>Affiliate oficial</th><th>Ações</th></tr></thead>
+      <thead><tr><th>Foto</th><th>Oferta</th><th>Loja</th><th>Score</th><th>Preço R$</th><th>Link oferta</th><th>Affiliate oficial</th><th>Ações</th></tr></thead>
       <tbody>
         {lista.map((p) => <tr key={p.id}>
+          <td><img src={p.image} alt={p.title} width={64} height={64} style={{ objectFit: "cover", borderRadius: 8 }} loading="lazy" /></td>
           <td><strong>{p.title}</strong><br /><span style={{ fontSize: 12 }}>{p.external_id}{p.url ? <> · <a href={p.url} target="_blank" rel="noreferrer">origem</a></> : " · catálogo"} · <a href={`https://www.mercadolivre.com.br/search?q=${encodeURIComponent(p.title)}`} target="_blank" rel="noreferrer">🔎 achar oferta</a></span></td>
           <td>{p.marketplace}</td>
           <td>⭐ {p.score}</td>
