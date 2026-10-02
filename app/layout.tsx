@@ -9,6 +9,10 @@ export const metadata: Metadata = {
   title: "AchadinhosBR 🔥 Ofertas do Mercado Livre que valem a pena",
   description: "Garimpamos as melhores ofertas e descontos reais do Mercado Livre. Aproveite antes que o preço mude!",
   icons: { icon: "/icon.svg" },
+  // Google Search Console: defina GOOGLE_SITE_VERIFICATION no servidor/Vercel.
+  verification: process.env.GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+    : undefined,
   openGraph: {
     title: "AchadinhosBR 🔥 Ofertas que valem a pena",
     description: "Ofertas e descontos reais do Mercado Livre, garimpados todos os dias.",

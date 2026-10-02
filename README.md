@@ -173,6 +173,18 @@ Opcionais: `SHOPEE_APP_ID`, `SHOPEE_APP_SECRET`, `SHOPEE_API_BASE`,
 `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_ID`, `WHATSAPP_TEST_TO`,
 `CRON_TERMOS`, `ALLOW_AUTO_PUBLISH=false`. Ver `.env.example`.
 
+### Google Search Console
+
+1. Acesse `search.google.com/search-console` → Adicionar propriedade (`https://achadinhos-nine.vercel.app`).
+2. Verificação por **tag HTML**: copie o código, configure na Vercel `GOOGLE_SITE_VERIFICATION=codigo` → Redeploy.
+3. Envie o sitemap: `https://achadinhos-nine.vercel.app/sitemap.xml`.
+
+### Comparar ofertas
+
+`/comparar`: busque produtos do site, adicione até 3 e compare preço, desconto,
+avaliação, loja e score (menor preço destacado). Dados: `GET /api/v4/site/buscar?q=`
+(só visíveis: V4 aprovados + legados ativos).
+
 ## Próximas melhorias
 
 - Importação de produtos

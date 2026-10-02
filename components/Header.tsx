@@ -18,6 +18,7 @@ export default function Header() {
         <div className="container navRow">
           <Link href="/">Início</Link>
           <Link href="/ofertas">🔥 Ofertas</Link>
+          <Link href="/comparar">⚖️ Comparar</Link>
           <Link href="/categoria/casa">🏠 Casa</Link>
           <Link href="/categoria/cozinha">🍳 Cozinha</Link>
           <Link href="/categoria/eletronicos">📱 Eletrônicos</Link>
