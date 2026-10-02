@@ -171,7 +171,7 @@ function normalizarCatalogo(it: Record<string, unknown>): MlOfertaNormalizada | 
       rating: 0,
       reviews: 0,
       sold: 0,
-      url: "",
+      url: `https://www.mercadolivre.com.br/p/${mlb}`,
       affiliate_url: null,
       marketplace: "mercadolivre" as const,
       category: typeof it.domain_id === "string" ? it.domain_id : null,
