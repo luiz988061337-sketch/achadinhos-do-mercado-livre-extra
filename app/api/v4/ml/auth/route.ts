@@ -12,7 +12,10 @@ export async function GET(req: Request) {
   }
   const clientId = (process.env.ML_CLIENT_ID || "").trim();
   if (!clientId) return NextResponse.json({ error: "Configure ML_CLIENT_ID no servidor." }, { status: 428 });
-  const redirectUri = new URL("/api/v4/ml/callback", req.url).origin + "/api/v4/ml/callback";
+  // Fixa e canônica: PRECISA ser idêntica à cadastrada no app (DevCenter).
+  const redirectUri =
+    (process.env.ML_REDIRECT_URI || "").trim() ||
+    "https://achadinhos-nine.vercel.app/api/v4/ml/callback";
   const auth = new URL("https://auth.mercadolivre.com.br/authorization");
   auth.searchParams.set("response_type", "code");
   auth.searchParams.set("client_id", clientId);

@@ -12,7 +12,9 @@ export async function GET(req: Request) {
 
   const clientId = (process.env.ML_CLIENT_ID || "").trim();
   const clientSecret = (process.env.ML_CLIENT_SECRET || "").trim();
-  const redirectUri = `${base}/api/v4/ml/callback`;
+  const redirectUri =
+    (process.env.ML_REDIRECT_URI || "").trim() ||
+    "https://achadinhos-nine.vercel.app/api/v4/ml/callback";
   if (!clientId || !clientSecret) return NextResponse.redirect(`${base}/admin/v4/pesquisar?ml=semcred`);
 
   const res = await fetch("https://api.mercadolibre.com/oauth/token", {
@@ -27,7 +29,11 @@ export async function GET(req: Request) {
     }),
     cache: "no-store",
   });
-  if (!res.ok) return NextResponse.redirect(`${base}/admin/v4/pesquisar?ml=falhatoken`);
+  if (!res.ok) {
+    const detalhe = await res.text().catch(() => "");
+    console.error("[ml/callback] token falhou:", res.status, detalhe.slice(0, 300));
+    return NextResponse.redirect(`${base}/admin/v4/pesquisar?ml=falhatoken`);
+  }
   const json = await res.json();
   const access = String(json?.access_token || "");
   const refresh = String(json?.refresh_token || "");
