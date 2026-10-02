@@ -160,6 +160,8 @@ Instalação: execute `supabase/migracao-v4.sql` UMA vez no SQL Editor.
 - **Automação:** `GET /api/cron/pesquisar?secret=` e
   `GET /api/cron/atualizar-precos?secret=` (header `Authorization: Bearer`
   também vale). Exigem `CRON_SECRET` + `SUPABASE_SERVICE_ROLE_KEY` no servidor.
+  Agendados em `vercel.json` (9h pesquisa, 9h30 preços — a Vercel envia o
+  `CRON_SECRET` como Bearer sozinha).
   Nunca publicam sozinhos (`ALLOW_AUTO_PUBLISH` ignorado sem affiliate oficial;
   novos entram `pending`).
 
