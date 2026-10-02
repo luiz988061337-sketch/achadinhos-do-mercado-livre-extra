@@ -38,7 +38,7 @@ export default function V4Pendentes({ iniciais }: { iniciais: V4Product[] }) {
       <thead><tr><th>Oferta</th><th>Loja</th><th>Score</th><th>Preço R$</th><th>Link oferta</th><th>Affiliate oficial</th><th>Ações</th></tr></thead>
       <tbody>
         {lista.map((p) => <tr key={p.id}>
-          <td><strong>{p.title}</strong><br /><span style={{ fontSize: 12 }}>{p.external_id}{p.url ? <> · <a href={p.url} target="_blank" rel="noreferrer">origem</a></> : " · catálogo"}</span></td>
+          <td><strong>{p.title}</strong><br /><span style={{ fontSize: 12 }}>{p.external_id}{p.url ? <> · <a href={p.url} target="_blank" rel="noreferrer">origem</a></> : " · catálogo"} · <a href={`https://www.mercadolivre.com.br/search?q=${encodeURIComponent(p.title)}`} target="_blank" rel="noreferrer">🔎 achar oferta</a></span></td>
           <td>{p.marketplace}</td>
           <td>⭐ {p.score}</td>
           <td><input style={{ width: 90 }} inputMode="decimal" placeholder={Number(p.price) > 0 ? String(p.price) : "0,00"} value={precos[p.id] ?? ""} onChange={(e) => setPrecos((a) => ({ ...a, [p.id]: e.target.value }))} /></td>
