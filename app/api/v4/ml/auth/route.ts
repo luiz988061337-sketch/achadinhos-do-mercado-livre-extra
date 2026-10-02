@@ -20,5 +20,7 @@ export async function GET(req: Request) {
   auth.searchParams.set("response_type", "code");
   auth.searchParams.set("client_id", clientId);
   auth.searchParams.set("redirect_uri", redirectUri);
+  // offline_access = devolve refresh_token (renovação automática ~6 meses).
+  auth.searchParams.set("scope", "offline_access read write");
   return NextResponse.redirect(auth);
 }
