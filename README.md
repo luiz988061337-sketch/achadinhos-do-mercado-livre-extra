@@ -141,6 +141,8 @@ Instalação: execute `supabase/migracao-v4.sql` UMA vez no SQL Editor.
 - **ML (API oficial, só leitura):** `/admin/v4/pesquisar` → `GET /api/v4/ml/search?q=` →
   `POST /api/v4/ml/import`. Salva `pending`, `affiliate_url=NULL` (cole o oficial
   na aprovação). Nunca converte link comum em afiliado.
+  Requer app oficial: crie em developers.mercadolivre.com.br e configure
+  `ML_CLIENT_ID` + `ML_CLIENT_SECRET` no servidor (o token é obtido sozinho).
 - **Shopee (Affiliate Open API, server-only):** mesmas telas com marketplace
   `shopee`. `affiliate_url` vem da API; sem `SHOPEE_APP_ID/SECRET` a busca
   retorna 428 com instrução. Secrets nunca vão ao frontend.
