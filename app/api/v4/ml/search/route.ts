@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { buscarML, MlNaoConfigurado } from "@/lib/ml";
+import { buscarML, MlNaoConfigurado, MlLimite } from "@/lib/ml";
 
 // GET /api/v4/ml/search?q=air+fryer&limit=20
 // Server-only. Usa o user token da conta conectada (ml_tokens).
@@ -22,7 +22,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ marketplace: "mercadolivre", total: itens.length, itens });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Falha na busca ML.";
-    const status = e instanceof MlNaoConfigurado ? 428 : 502;
+    const status = e instanceof MlLimite ? 429 : e instanceof MlNaoConfigurado ? 428 : 502;
     return NextResponse.json({ error: msg }, { status });
   }
 }

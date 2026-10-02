@@ -84,7 +84,12 @@ async function headersMl(userToken?: string | null): Promise<Record<string, stri
   return h;
 }
 
+export class MlLimite extends Error {}
+
 function erroMl(status: number, temUserToken: boolean): Error {
+  if (status === 429) {
+    return new MlLimite("ML limitou as buscas (429). Aguarde cerca de 1 minuto e tente de novo.");
+  }
   if (status === 401 || status === 403) {
     return new MlNaoConfigurado(
       temUserToken
@@ -105,11 +110,17 @@ export async function buscarML(termo: string, limit = 20, userToken?: string | n
   if (!q) return [];
   // Catálogo oficial (funciona com app token). Traz nome/imagem/categoria;
   // preço e link da oferta são preenchidos na aprovação (curadoria).
-  const res = await fetch(`${ML_CATALOG_SEARCH}?site_id=MLB&status=active&q=${encodeURIComponent(q)}&limit=${clampLimit(limit)}`, {
+  // 429 = rate limit do ML: espera 2,5s e tenta 1x de novo.
+  const url = `${ML_CATALOG_SEARCH}?site_id=MLB&status=active&q=${encodeURIComponent(q)}&limit=${clampLimit(limit)}`;
+  let res = await fetch(url, {
     headers: await headersMl(userToken),
     // Server-only: esta lib nunca é importada no cliente.
     cache: "no-store",
   });
+  if (res.status === 429) {
+    await new Promise((r) => setTimeout(r, 2500));
+    res = await fetch(url, { headers: await headersMl(userToken), cache: "no-store" });
+  }
   if (!res.ok) throw erroMl(res.status, Boolean(userToken));
   const json = await res.json();
   const results: unknown[] = Array.isArray(json?.results) ? json.results : [];
