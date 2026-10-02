@@ -132,6 +132,43 @@ As tabelas usam Row Level Security com `admin_users` + `is_admin()`.
 Não guardamos IP original (só hash) nem dados pessoais além do necessário.
 Cliques não significam vendas: consulte a Central de Afiliados do ML.
 
+## V4 — Marketplaces (ML + Shopee), score, aprovação, WhatsApp
+
+Estrutura nova convivendo com o legado (`produtos`/`cliques` intactos).
+Tabelas novas: `products`, `clicks`, `whatsapp_queue`, `whatsapp_logs`.
+Instalação: execute `supabase/migracao-v4.sql` UMA vez no SQL Editor.
+
+- **ML (API oficial, só leitura):** `/admin/v4/pesquisar` → `GET /api/v4/ml/search?q=` →
+  `POST /api/v4/ml/import`. Salva `pending`, `affiliate_url=NULL` (cole o oficial
+  na aprovação). Nunca converte link comum em afiliado.
+- **Shopee (Affiliate Open API, server-only):** mesmas telas com marketplace
+  `shopee`. `affiliate_url` vem da API; sem `SHOPEE_APP_ID/SECRET` a busca
+  retorna 428 com instrução. Secrets nunca vão ao frontend.
+- **Score 0-100** (`lib/score.ts`): desconto 30 + avaliação 20 + vendas 20 +
+  preço 15 + comissão 15 (+5 bônus). Visível no painel e nos cards V4.
+- **Aprovação:** `/admin/v4/pendentes` → Publicar (exige affiliate oficial) /
+  Rejeitar / Fila WA. Só `approved` aparece no site (`/` e `/ofertas`).
+- **Rastreamento:** `/ver/[id]?origem=` registra em `clicks` (produto,
+  marketplace, data/hora, referer, user-agent, hash IP) e redireciona ao
+  `affiliate_url`. `/sair/[id]` legado preservado.
+- **WhatsApp:** `/admin/v4/whatsapp` (fila + logs). Sem automação não oficial;
+  envio só via Cloud API oficial (`WHATSAPP_ACCESS_TOKEN/PHONE_ID`).
+- **Painel:** `/admin/v4` → publicados, pendentes, cliques, por marketplace,
+  top score.
+- **Automação:** `GET /api/cron/pesquisar?secret=` e
+  `GET /api/cron/atualizar-precos?secret=` (header `Authorization: Bearer`
+  também vale). Exigem `CRON_SECRET` + `SUPABASE_SERVICE_ROLE_KEY` no servidor.
+  Nunca publicam sozinhos (`ALLOW_AUTO_PUBLISH` ignorado sem affiliate oficial;
+  novos entram `pending`).
+
+### Env Vercel (V4)
+
+Obrigatórias: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+`ADMIN_EMAILS`, `SUPABASE_SERVICE_ROLE_KEY` (só servidor), `CRON_SECRET`.
+Opcionais: `SHOPEE_APP_ID`, `SHOPEE_APP_SECRET`, `SHOPEE_API_BASE`,
+`WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_ID`, `WHATSAPP_TEST_TO`,
+`CRON_TERMOS`, `ALLOW_AUTO_PUBLISH=false`. Ver `.env.example`.
+
 ## Próximas melhorias
 
 - Importação de produtos

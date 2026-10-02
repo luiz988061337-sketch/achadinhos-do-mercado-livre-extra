@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
+import ProductCardV4 from "@/components/ProductCardV4";
 import { categorias } from "@/lib/categorias";
 import { createClient } from "@/lib/supabase/server";
 import { POR_PAGINA, ORDENACOES, lerOrdem, lerPagina, hrefLista } from "@/lib/listagem";
@@ -48,6 +49,16 @@ export default async function Ofertas({ searchParams }: { searchParams: Promise<
   const pag = Math.min(pagina, totalPaginas);
   const comuns = { q: q || undefined, ordem, categoria: catFiltro || undefined };
 
+  // V4: somente aprovados (products.status=approved). Não altera a lista legada.
+  // Mostra na 1ª página como vitrine nova, com rastreio via /ver/[id].
+  let v4lista: any[] = [];
+  if (pagina === 1) {
+    let v4qry = supabase.from("products").select("*").eq("status", "approved").order("score", { ascending: false }).limit(12);
+    if (q) v4qry = v4qry.ilike("title", `%${q}%`);
+    const { data: v4data } = await v4qry;
+    v4lista = v4data ?? [];
+  }
+
   return <div className="container">
     <div className="pageTitle">
       <h1>{q ? `🔎 Resultados para "${q}"` : "🔥 Ofertas de hoje"}</h1>
@@ -67,6 +78,13 @@ export default async function Ofertas({ searchParams }: { searchParams: Promise<
       <div className="actions" style={{ marginTop: 0 }}><button className="secondary" type="submit">Aplicar</button></div>
     </form>
     <div className="products">{lista.map((p) => <ProductCard key={p.id} produto={p} />)}</div>
+    {v4lista.length > 0 ? <>
+      <div className="pageTitle" style={{ marginTop: 24 }}>
+        <h2>🆕 Novas ofertas (ML + Shopee) — aprovadas</h2>
+        <p>Rastreamento via /ver · score 0-100 · somente aprovadas aparecem aqui.</p>
+      </div>
+      <div className="products">{v4lista.map((p) => <ProductCardV4 key={p.id} produto={p} />)}</div>
+    </> : null}
     {totalPaginas > 1 ? <nav className="pager" aria-label="Paginação">
       {pag > 1 ? <Link className="secondary" style={{ textDecoration: "none" }} href={hrefLista("/ofertas", { ...comuns, pagina: String(pag - 1) })}>← Anterior</Link> : null}
       <span>Página {pag} de {totalPaginas}</span>

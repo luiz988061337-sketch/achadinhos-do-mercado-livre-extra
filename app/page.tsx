@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
+import ProductCardV4 from "@/components/ProductCardV4";
 import CarrosselOfertas from "@/components/CarrosselOfertas";
 import { categorias } from "@/lib/categorias";
 import { topClicados } from "@/lib/ranking";
@@ -23,6 +24,10 @@ export default async function Home() {
     const cliques = new Map(topIds.map((t) => [t.produto_id, t.cliques]));
     emAlta = (data ?? []).sort((a: any, b: any) => (cliques.get(b.id) ?? 0) - (cliques.get(a.id) ?? 0));
   }
+
+  // V4: vitrine de aprovados (ML + Shopee) por score — não altera o legado.
+  const { data: v4aprovados } = await supabase.from("products").select("*").eq("status", "approved").order("score", { ascending: false }).limit(8);
+  const v4lista = v4aprovados ?? [];
 
   return <div className="container">
     <section className="hero" aria-labelledby="hero-titulo">
@@ -49,6 +54,11 @@ export default async function Home() {
     {emAlta.length > 0 ? <section className="section" aria-labelledby="alta-titulo">
       <div className="sectionHeader"><h2 id="alta-titulo">📈 Em alta na semana</h2><Link href="/ofertas?ordem=cliques" className="seeAll">Ver mais clicados</Link></div>
       <div className="products">{emAlta.map((p) => <ProductCard key={p.id} produto={p} />)}</div>
+    </section> : null}
+
+    {v4lista.length > 0 ? <section className="section" aria-labelledby="v4-titulo">
+      <div className="sectionHeader"><h2 id="v4-titulo">🆕 Achadinhos ML + Shopee (aprovados)</h2><Link href="/ofertas" className="seeAll">Ver ofertas</Link></div>
+      <div className="products">{v4lista.map((p) => <ProductCardV4 key={p.id} produto={p} />)}</div>
     </section> : null}
 
     <section className="section" aria-labelledby="cats-titulo" id="categorias">

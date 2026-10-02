@@ -1,0 +1,62 @@
+import { createClient } from "@/lib/supabase/server";
+
+// Dashboard V4 — indicadores novos, sem mexer no dashboard legado (/admin).
+// produtos publicados (approved) · pendentes · cliques (V4) · por marketplace · top score.
+export default async function AdminV4() {
+  const supabase = await createClient();
+  const [
+    { count: publicados },
+    { count: pendentes },
+    { count: rejeitados },
+    { count: cliques },
+    { data: porMp },
+    { data: top },
+    { data: fila },
+  ] = await Promise.all([
+    supabase.from("products").select("*", { count: "exact", head: true }).eq("status", "approved"),
+    supabase.from("products").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.from("products").select("*", { count: "exact", head: true }).eq("status", "rejected"),
+    supabase.from("clicks").select("*", { count: "exact", head: true }),
+    supabase.from("products").select("marketplace"),
+    supabase.from("products").select("id,title,marketplace,score,price,status").eq("status", "approved").order("score", { ascending: false }).limit(10),
+    supabase.from("whatsapp_queue").select("*", { count: "exact", head: true }).eq("status", "queued"),
+  ]);
+
+  const mpCount = new Map<string, number>();
+  for (const p of porMp ?? []) mpCount.set(p.marketplace, (mpCount.get(p.marketplace) ?? 0) + 1);
+
+  return <>
+    <h1>🆕 Painel V4 — Marketplaces</h1>
+    <p>Modelo novo (<code>products/clicks/whatsapp_*</code>). O painel legado continua em <a href="/admin">/admin</a>.</p>
+
+    <h2>📦 Produtos</h2>
+    <div className="adminGrid">
+      <div className="stat">Publicados<strong>{publicados ?? 0}</strong></div>
+      <div className="stat">Pendentes<strong>{pendentes ?? 0}</strong></div>
+      <div className="stat">Rejeitados<strong>{rejeitados ?? 0}</strong></div>
+      <div className="stat">Cliques V4<strong>{cliques ?? 0}</strong><span style={{ fontSize: 12 }}>via /ver/[id]</span></div>
+    </div>
+
+    <h2>🏪 Ofertas por marketplace</h2>
+    <div className="adminGrid">
+      <div className="stat">Mercado Livre<strong>{mpCount.get("mercadolivre") ?? 0}</strong></div>
+      <div className="stat">Shopee<strong>{mpCount.get("shopee") ?? 0}</strong></div>
+      <div className="stat">Fila WhatsApp<strong>{fila ?? 0} na fila</strong></div>
+    </div>
+
+    <h2>⭐ Melhores ofertas por score</h2>
+    <div className="tableWrap"><table className="table"><thead><tr><th>Título</th><th>Loja</th><th>Score</th><th>Preço</th></tr></thead>
+      <tbody>
+        {(top ?? []).map((p: { id: string; title: string; marketplace: string; score: number; price: number }) =>
+          <tr key={p.id}><td>{p.title}</td><td>{p.marketplace}</td><td>⭐ {p.score}</td><td>R$ {Number(p.price).toFixed(2)}</td></tr>)}
+        {(top ?? []).length === 0 && <tr><td colSpan={4}>Nenhum produto aprovado ainda. Vá em Pesquisar.</td></tr>}
+      </tbody></table></div>
+
+    <h2>🧭 Atalhos V4</h2>
+    <div className="adminGrid">
+      <div className="stat"><a href="/admin/v4/pesquisar">🔎 Pesquisar ofertas</a></div>
+      <div className="stat"><a href="/admin/v4/pendentes">✅ Aprovação (pending)</a></div>
+      <div className="stat"><a href="/admin/v4/whatsapp">💬 Fila WhatsApp</a></div>
+    </div>
+  </>;
+}

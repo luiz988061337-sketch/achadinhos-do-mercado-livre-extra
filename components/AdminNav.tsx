@@ -6,6 +6,10 @@ export default function AdminNav() {
     <Link href="/admin/produtos">📦 Produtos</Link>
     <Link href="/admin/produtos/novo">➕ Novo produto</Link>
     <Link href="/admin/anuncios">📣 Central de Anúncios</Link>
+    <Link href="/admin/v4">🆕 V4 Marketplaces</Link>
+    <Link href="/admin/v4/pesquisar">🔎 V4 Pesquisar</Link>
+    <Link href="/admin/v4/pendentes">✅ V4 Aprovação</Link>
+    <Link href="/admin/v4/whatsapp">💬 V4 WhatsApp</Link>
     <form action="/auth/signout" method="post"><button className="secondary" type="submit">Sair</button></form>
   </nav>;
 }
