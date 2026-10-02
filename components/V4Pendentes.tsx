@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { V4Product } from "@/lib/v4-types";
 
 // Lista pending com ações: publicar (preço + links oficiais), rejeitar, fila WhatsApp.
+// Lista pending com ações: publicar (preço + links oficiais), rejeitar, fila WhatsApp.
 export default function V4Pendentes({ iniciais }: { iniciais: V4Product[] }) {
   const [lista, setLista] = useState<V4Product[]>(iniciais);
   const [affs, setAffs] = useState<Record<string, string>>({});
@@ -39,7 +40,7 @@ export default function V4Pendentes({ iniciais }: { iniciais: V4Product[] }) {
       <tbody>
         {lista.map((p) => <tr key={p.id}>
           <td><img src={p.image} alt={p.title} width={64} height={64} style={{ objectFit: "cover", borderRadius: 8 }} loading="lazy" /></td>
-          <td><strong>{p.title}</strong><br /><span style={{ fontSize: 12 }}>{p.external_id}{p.url ? <> · <a href={p.url} target="_blank" rel="noreferrer">origem</a></> : " · catálogo"} · <a href={`https://www.mercadolivre.com.br/search?q=${encodeURIComponent(p.title)}`} target="_blank" rel="noreferrer">🔎 achar oferta</a></span></td>
+          <td><strong>{p.title}</strong><br /><span style={{ fontSize: 12 }}>{p.external_id}{p.url ? <> · <a href={p.url} target="_blank" rel="noreferrer">origem</a></> : " · catálogo"} · <a href={`https://www.google.com/search?q=${encodeURIComponent(`site:mercadolivre.com.br ${p.title}`)}`} target="_blank" rel="noreferrer">🔎 achar oferta</a></span></td>
           <td>{p.marketplace}</td>
           <td>⭐ {p.score}</td>
           <td><input style={{ width: 90 }} inputMode="decimal" placeholder={Number(p.price) > 0 ? String(p.price) : "0,00"} value={precos[p.id] ?? ""} onChange={(e) => setPrecos((a) => ({ ...a, [p.id]: e.target.value }))} /></td>
