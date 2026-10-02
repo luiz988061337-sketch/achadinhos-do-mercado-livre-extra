@@ -20,7 +20,9 @@ export function validarLinkAfiliado(valor: string): ValidacaoLink {
   }
 
   if (u.protocol !== "https:") return { ok: false, motivo: "O link precisa começar com https://." };
-  if (!HOST_RE.test(u.hostname)) return { ok: false, motivo: "O link precisa ser do Mercado Livre." };
+  // Encurtador oficial do Mercado Livre (Central de Afiliados): sempre específico da oferta.
+  if (/^https:\/\/meli\.la\/[A-Za-z0-9]{3,}\/?(\?.*)?$/i.test(url)) return { ok: true };
+  if (!HOST_RE.test(u.hostname)) return { ok: false, motivo: "O link precisa ser do Mercado Livre (ou o encurtador oficial meli.la)." };
   if (HOMEPAGE_RE.test(url)) return { ok: false, motivo: "Não use a página inicial. Use o link específico da oferta." };
   if (GENERIC_PATH_RE.test(u.pathname)) return { ok: false, motivo: "Carrinho, checkout e busca não valem comissão. Use o link da oferta." };
   if (/busca/i.test(url)) return { ok: false, motivo: "Página de busca não vale. Use o link específico do produto." };

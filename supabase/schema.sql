@@ -53,11 +53,14 @@ create table if not exists public.produtos (
   constraint produto_ativo_exige_link check (ativo = false or link_afiliado is not null),
   constraint link_afiliado_valido check (
     link_afiliado is null or (
-      link_afiliado ~* '^https://([^/]+\.)?(mercadolivre\.com(\.br)?|mlivre\.[a-z.]+)/.+'
-      and length(link_afiliado) > 30
-      and link_afiliado !~* '/(cart|carrinho|checkout|search)'
-      and link_afiliado !~* 'busca'
-      and link_afiliado !~* '^https?://([^/]+\.)?mercadolivre\.com(\.br)?/?(\?.*)?$'
+      (
+        link_afiliado ~* '^https://([^/]+\.)?(mercadolivre\.com(\.br)?|mlivre\.[a-z.]+)/.+'
+        and length(link_afiliado) > 30
+        and link_afiliado !~* '/(cart|carrinho|checkout|search)'
+        and link_afiliado !~* 'busca'
+        and link_afiliado !~* '^https?://([^/]+\.)?mercadolivre\.com(\.br)?/?(\?.*)?$'
+      )
+      or link_afiliado ~* '^https://meli\.la/[A-Za-z0-9]{3,}/*(\?.*)?$'
     )
   )
 );

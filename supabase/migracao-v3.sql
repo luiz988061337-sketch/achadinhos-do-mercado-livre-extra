@@ -112,6 +112,7 @@ where link_afiliado is not null and not (
   and link_afiliado !~* 'busca'
   and link_afiliado !~* '^https?://([^/]+\.)?mercadolivre\.com(\.br)?/?(\?.*)?$'
 )
+and link_afiliado !~* '^https://meli\.la/[A-Za-z0-9]{3,}/*(\?.*)?$'
 returning id, slug, nome, ativo;
 
 -- ===== 5. Constraints de validade do link (FASE 2) =====
@@ -123,11 +124,14 @@ alter table public.produtos drop constraint if exists link_afiliado_valido;
 alter table public.produtos add constraint link_afiliado_valido
 check (
   link_afiliado is null or (
-    link_afiliado ~* '^https://([^/]+\.)?(mercadolivre\.com(\.br)?|mlivre\.[a-z.]+)/.+'
-    and length(link_afiliado) > 30
-    and link_afiliado !~* '/(cart|carrinho|checkout|search)'
-    and link_afiliado !~* 'busca'
-    and link_afiliado !~* '^https?://([^/]+\.)?mercadolivre\.com(\.br)?/?(\?.*)?$'
+    (
+      link_afiliado ~* '^https://([^/]+\.)?(mercadolivre\.com(\.br)?|mlivre\.[a-z.]+)/.+'
+      and length(link_afiliado) > 30
+      and link_afiliado !~* '/(cart|carrinho|checkout|search)'
+      and link_afiliado !~* 'busca'
+      and link_afiliado !~* '^https?://([^/]+\.)?mercadolivre\.com(\.br)?/?(\?.*)?$'
+    )
+    or link_afiliado ~* '^https://meli\.la/[A-Za-z0-9]{3,}/*(\?.*)?$'
   )
 );
 
