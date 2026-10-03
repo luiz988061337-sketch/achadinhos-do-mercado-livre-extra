@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { exigirAdmin, ehErroResponse } from "@/lib/v4-guard";
 import { calcularScore } from "@/lib/score";
+import { detalharML } from "@/lib/ml";
 
 // POST /api/v4/ml/import  { itens: [{external_id,title,image,price,old_price,url,category,sold}] }
 // Salva TODOS como pending. affiliate_url fica NULL (admin cola o oficial depois).
@@ -24,6 +25,17 @@ export async function POST(req: Request) {
   if (itens.length > 50) return NextResponse.json({ error: "Máximo 50 por vez." }, { status: 400 });
 
   const supabase = await createClient();
+  // Enriquecimento best-effort: catálogo vem sem preço; tenta detalhar o item
+  // (quando a API libera) para já chegar com preço/url. Nunca quebra a importação.
+  let userToken: string | null = null;
+  try {
+    const { obterTokenUsuario } = await import("@/lib/ml-user");
+    userToken = await obterTokenUsuario(supabase as never).catch(() => null);
+  } catch {
+    userToken = null;
+  }
+  let enriquecidos = 0;
+  let tentativas = 0;
   let inseridos = 0;
   const pulados: string[] = [];
   const erros: string[] = [];
@@ -32,14 +44,28 @@ export async function POST(req: Request) {
     const it = raw as Record<string, unknown>;
     const external_id = String(it.external_id || "").trim();
     const title = String(it.title || "").trim();
-    const price = Math.max(0, Number(it.price) || 0);
-    const url = String(it.url || "").trim();
+    let price = Math.max(0, Number(it.price) || 0);
+    let url = String(it.url || "").trim();
     const image = String(it.image || "").trim();
     // Catálogo oficial pode vir sem preço/url (price=0/url=""): entra pending
     // e o admin preenche preço + link da oferta na aprovação. Exige título/imagem.
     if (!external_id || !title || !image) {
       pulados.push(external_id || title || "?");
       continue;
+    }
+    // Tenta completar preço/url do item (máx 10 tentativas p/ não estourar rate limit).
+    if (!(price > 0) && tentativas < 10) {
+      tentativas++;
+      try {
+        const det = await detalharML(external_id, userToken);
+        if (det && det.price > 0) {
+          price = det.price;
+          if (!url || /\/p\/MLB/i.test(url)) url = det.url || url;
+          enriquecidos++;
+        }
+      } catch {
+        // mantém price 0 → preencher na aprovação
+      }
     }
     const old_price = it.old_price != null && Number(it.old_price) > price ? Number(it.old_price) : null;
     const discount =
@@ -71,5 +97,5 @@ export async function POST(req: Request) {
       inseridos++;
     }
   }
-  return NextResponse.json({ inseridos, pulados, erros, status: "pending" });
+  return NextResponse.json({ inseridos, pulados, erros, status: "pending", enriquecidos });
 }

@@ -51,7 +51,7 @@ export default function V4Pesquisa() {
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || "Falha ao importar.");
-      setMsg(`Importados: ${j.inseridos} como PENDING. Pulados: ${(j.pulados || []).length}.`);
+      setMsg(`Importados: ${j.inseridos} como PENDING${j.enriquecidos ? ` (${j.enriquecidos} com preço puxado)` : " (preço vai na aprovação)"}. Pulados: ${(j.pulados || []).length}.`);
       setItens([]);
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Falha ao importar.");
