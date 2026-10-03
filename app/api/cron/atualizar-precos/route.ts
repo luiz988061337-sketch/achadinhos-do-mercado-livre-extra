@@ -27,6 +27,15 @@ export async function GET(req: Request) {
   const limite = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") || "30")));
 
   const supabase = await createAdminClient();
+  // Expira ofertas vencidas (published + expires_at passado → expired). Idempotente.
+  let expiradas = 0;
+  try {
+    const agora = new Date().toISOString();
+    const { count } = await supabase.from("offers").update({ status: "expired" }, { count: "exact" }).eq("status", "published").lt("expires_at", agora);
+    expiradas = count ?? 0;
+  } catch {
+    expiradas = 0;
+  }
   let userToken: string | null = null;
   try {
     const { obterTokenUsuario } = await import("@/lib/ml-user");
@@ -118,5 +127,5 @@ export async function GET(req: Request) {
     }
   }
 
-  return NextResponse.json({ verificados: (prods ?? []).length, atualizados, quedas_de_preco: quedas, fila_whatsapp: filaWa, erros: erros.slice(0, 20) });
+  return NextResponse.json({ verificados: (prods ?? []).length, atualizados, quedas_de_preco: quedas, fila_whatsapp: filaWa, expiradas, erros: erros.slice(0, 20) });
 }

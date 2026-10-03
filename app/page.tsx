@@ -28,19 +28,19 @@ export default async function Home() {
 
   // V4: vitrine de aprovados (ML + Shopee) por score — não altera o legado.
   const { data: v4aprovados } = await supabase.from("products").select("*").eq("status", "approved").order("score", { ascending: false }).limit(8);
-  const v4lista = v4aprovados ?? [];
+  const v4todos = v4aprovados ?? [];
 
   // V3: ofertas publicadas por score (destaques primeiro) — seção nova, resto intacto.
   const { data: v3ofertas } = await supabase
     .from("offers")
-    .select("id, slug, current_price, old_price, discount_percentage, coupon_code, score, score_level, featured, products(title, image, rating, reviews)")
+    .select("id, slug, product_id, current_price, old_price, discount_percentage, coupon_code, score, score_level, featured, products(title, image, rating, reviews)")
     .eq("status", "published")
     .or("expires_at.is.null,expires_at.gt." + new Date().toISOString())
     .order("featured", { ascending: false })
     .order("score", { ascending: false })
     .limit(8);
   const v3lista = ((v3ofertas ?? []) as unknown as {
-    slug: string | null; current_price: number; old_price: number | null;
+    slug: string | null; product_id: string; current_price: number; old_price: number | null;
     discount_percentage: number; coupon_code: string | null; score: number;
     score_level: "EXCELENTE" | "BOA" | "NORMAL" | "NAO_RECOMENDADA";
     products: { title: string; image: string; rating: number | null; reviews: number | null } | { title: string; image: string; rating: number | null; reviews: number | null }[] | null;
@@ -48,6 +48,7 @@ export default async function Home() {
     const p = Array.isArray(o.products) ? o.products[0] : o.products;
     return {
       slug: o.slug,
+      product_id: (o as unknown as { product_id: string }).product_id,
       current_price: Number(o.current_price),
       old_price: o.old_price != null ? Number(o.old_price) : null,
       discount_percentage: o.discount_percentage,
@@ -60,6 +61,10 @@ export default async function Home() {
       reviews: p?.reviews != null ? Number(p.reviews) : null,
     };
   }).filter((o) => o.slug && o.title);
+
+  // Prioriza V3: esconde da vitrine V4 quem já tem oferta publicada (evita duplicar).
+  const comOferta = new Set(v3lista.map((o) => o.product_id));
+  const v4lista = v4todos.filter((p) => !comOferta.has(p.id));
 
   return <div className="container">
     <section className="hero" aria-labelledby="hero-titulo">
@@ -88,14 +93,14 @@ export default async function Home() {
       <div className="products">{emAlta.map((p) => <ProductCard key={p.id} produto={p} />)}</div>
     </section> : null}
 
-    {v4lista.length > 0 ? <section className="section" aria-labelledby="v4-titulo">
-      <div className="sectionHeader"><h2 id="v4-titulo">🆕 Achadinhos ML + Shopee (aprovados)</h2><Link href="/ofertas" className="seeAll">Ver ofertas</Link></div>
-      <div className="products">{v4lista.map((p) => <ProductCardV4 key={p.id} produto={p} />)}</div>
-    </section> : null}
-
     {v3lista.length > 0 ? <section className="section" aria-labelledby="v3-titulo">
       <div className="sectionHeader"><h2 id="v3-titulo">🔥 Ofertas de hoje</h2><Link href="/ofertas" className="seeAll">Ver todas</Link></div>
       <div className="products">{v3lista.map((o) => <OfertaCard key={o.slug} offer={o} />)}</div>
+    </section> : null}
+
+    {v4lista.length > 0 ? <section className="section" aria-labelledby="v4-titulo">
+      <div className="sectionHeader"><h2 id="v4-titulo">🆕 Achadinhos ML + Shopee (aprovados)</h2><Link href="/ofertas" className="seeAll">Ver ofertas</Link></div>
+      <div className="products">{v4lista.map((p) => <ProductCardV4 key={p.id} produto={p} />)}</div>
     </section> : null}
 
     <section className="section" aria-labelledby="cats-titulo" id="categorias">
