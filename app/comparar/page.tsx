@@ -27,14 +27,28 @@ async function buscarPorChaves(supabase: Awaited<ReturnType<typeof createClient>
   const out: ItemComparado[] = [];
   if (idsV4.length > 0) {
     const { data } = await supabase.from("products").select("*").in("id", idsV4).eq("status", "approved");
+    // Prefere /oferta/[slug] quando houver oferta publicada e não expirada; senão /ver/[id].
+    const agora = Date.now();
+    let slugPorProduto = new Map<string, string>();
+    try {
+      const { data: offers } = await supabase.from("offers").select("product_id, slug, expires_at").in("product_id", idsV4).eq("status", "published").not("slug", "is", null);
+      for (const o of (offers ?? []) as { product_id: string; slug: string | null; expires_at: string | null }[]) {
+        if (!o.slug) continue;
+        if (o.expires_at != null && new Date(o.expires_at).getTime() < agora) continue;
+        if (!slugPorProduto.has(o.product_id)) slugPorProduto.set(o.product_id, o.slug);
+      }
+    } catch {
+      slugPorProduto = new Map();
+    }
     for (const p of data ?? []) {
+      const slug = slugPorProduto.get(p.id);
       out.push({
         chave: `v4:${p.id}`, titulo: p.title, imagem: p.image,
         preco: Number(p.price), precoAntigo: p.old_price != null ? Number(p.old_price) : null,
         desconto: p.discount, avaliacao: Number(p.rating) || 0,
         avaliacoes: `${Number(p.sold).toLocaleString("pt-BR")} vendidos`,
         loja: p.marketplace === "shopee" ? "Shopee" : "Mercado Livre",
-        score: p.score, hrefOferta: `/ver/${p.id}`,
+        score: p.score, hrefOferta: slug ? `/oferta/${slug}` : `/ver/${p.id}`,
       });
     }
   }

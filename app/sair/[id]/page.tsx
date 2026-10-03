@@ -27,7 +27,7 @@ export default async function SairPage({
     .eq("ativo", true)
     .single();
 
-  if (!produto?.link_afiliado) redirect("/ofertas");
+  if (!produto?.link_afiliado) redirect("/ofertas?motivo=sem-link");
 
   const heads = await headers();
   const jar = await cookies();

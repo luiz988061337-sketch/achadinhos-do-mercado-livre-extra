@@ -22,7 +22,7 @@ export async function GET(
     .single();
 
   // Sem produto aprovado ou sem afiliado oficial → volta para ofertas (não expõe link cru).
-  if (!p) return NextResponse.redirect(new URL("/ofertas", _req.url));
+  if (!p) return NextResponse.redirect(new URL("/ofertas?motivo=nao-encontrada", _req.url));
 
   const heads = await headers();
   const jar = await cookies();
@@ -47,6 +47,6 @@ export async function GET(
   });
 
   const destino = (p.affiliate_url || p.url || "").trim();
-  if (!destino.startsWith("https://")) return NextResponse.redirect(new URL("/ofertas", _req.url));
+  if (!destino.startsWith("https://")) return NextResponse.redirect(new URL("/ofertas?motivo=sem-link", _req.url));
   return NextResponse.redirect(destino);
 }

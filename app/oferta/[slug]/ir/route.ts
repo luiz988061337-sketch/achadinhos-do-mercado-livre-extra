@@ -22,7 +22,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
 
   const invalida =
     !offer || (offer.expires_at != null && new Date(offer.expires_at).getTime() < Date.now());
-  if (invalida) return NextResponse.redirect(new URL("/ofertas", req.url));
+  if (invalida) return NextResponse.redirect(new URL("/ofertas?motivo=expirada", req.url));
 
   const { data: p } = await supabase
     .from("products")
@@ -32,7 +32,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   const destino = (p?.affiliate_url || "").trim();
   // Publicada exige afiliado oficial (validado no PATCH); sem ele, não expõe link cru.
   if (!p || !destino.startsWith("https://")) {
-    return NextResponse.redirect(new URL("/ofertas", req.url));
+    return NextResponse.redirect(new URL("/ofertas?motivo=sem-link", req.url));
   }
 
   const heads = await headers();

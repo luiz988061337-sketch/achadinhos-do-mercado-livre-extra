@@ -6,7 +6,13 @@ import { categorias } from "@/lib/categorias";
 import { createClient } from "@/lib/supabase/server";
 import { POR_PAGINA, ORDENACOES, lerOrdem, lerPagina, hrefLista } from "@/lib/listagem";
 
-type SP = { q?: string; pagina?: string; ordem?: string; categoria?: string };
+type SP = { q?: string; pagina?: string; ordem?: string; categoria?: string; motivo?: string };
+
+const AVISO_MOTIVO: Record<string, string> = {
+  "expirada": "Essa oferta expirou ou não está mais publicada. Veja as ofertas de hoje abaixo.",
+  "sem-link": "Essa oferta está sem link oficial de afiliado. Escolha outra abaixo.",
+  "nao-encontrada": "Produto não encontrado ou ainda não aprovado. Veja as ofertas disponíveis.",
+};
 
 export default async function Ofertas({ searchParams }: { searchParams: Promise<SP> }) {
   const params = await searchParams;
@@ -110,6 +116,7 @@ export default async function Ofertas({ searchParams }: { searchParams: Promise<
   }
 
   return <div className="container">
+    {params.motivo && AVISO_MOTIVO[params.motivo] ? <div className="notice" role="status">{AVISO_MOTIVO[params.motivo]}</div> : null}
     <div className="pageTitle">
       <h1>{q ? `🔎 Resultados para "${q}"` : "🔥 Ofertas de hoje"}</h1>
       <p aria-live="polite">{total === 0 ? "Nenhum produto encontrado." : `${total} ${total === 1 ? "achadinho" : "achadinhos"} — página ${pag} de ${totalPaginas}.`}</p>
