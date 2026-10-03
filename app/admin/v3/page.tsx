@@ -109,6 +109,28 @@ export default async function DashboardV3({
   }
   const resultado = comissaoAprovada - investimento;
 
+  // Cliques por expirada (período + total) para priorizar a reativação.
+  const idsExpiradas = ((expiradasRecentes ?? []) as { id: string }[]).map((o) => o.id);
+  const cliquesExpiradas = new Map<string, { periodo: number; total: number }>();
+  if (idsExpiradas.length > 0) {
+    const [{ data: cliPer }, { data: cliTot }] = await Promise.all([
+      supabase.from("clicks").select("offer_id").in("offer_id", idsExpiradas).gte("created_at", inicio).limit(10000),
+      supabase.from("clicks").select("offer_id").in("offer_id", idsExpiradas).limit(10000),
+    ]);
+    for (const c of (cliPer ?? []) as { offer_id: string | null }[]) {
+      if (!c.offer_id) continue;
+      const e = cliquesExpiradas.get(c.offer_id) ?? { periodo: 0, total: 0 };
+      e.periodo += 1;
+      cliquesExpiradas.set(c.offer_id, e);
+    }
+    for (const c of (cliTot ?? []) as { offer_id: string | null }[]) {
+      if (!c.offer_id) continue;
+      const e = cliquesExpiradas.get(c.offer_id) ?? { periodo: 0, total: 0 };
+      e.total += 1;
+      cliquesExpiradas.set(c.offer_id, e);
+    }
+  }
+
   const cards: { rotulo: string; valor: string; detalhe?: string }[] = [
     { rotulo: "VISITANTES", valor: String(sessoes.size), detalhe: `${periodo}d (sessões com clique)` },
     { rotulo: "CLIQUES", valor: String(cliques ?? 0), detalhe: `hoje: ${cliquesHoje ?? 0} · views: ${views ?? 0}` },
@@ -175,18 +197,21 @@ export default async function DashboardV3({
             <tr>
               <th>Oferta</th>
               <th>Expirou em</th>
+              <th>Cliques {periodo}d / total</th>
               <th>Ação</th>
             </tr>
           </thead>
           <tbody>
             {((expiradasRecentes ?? []) as { id: string; slug: string | null; updated_at: string; expires_at: string | null; products: { title: string } | { title: string }[] | null }[]).map((o) => {
               const titulo = Array.isArray(o.products) ? o.products[0]?.title : o.products?.title;
+              const cli = cliquesExpiradas.get(o.id) ?? { periodo: 0, total: 0 };
               return (
                 <tr key={o.id}>
                   <td>
                     <Link href={`/admin/ofertas/${o.id}`}>{titulo ?? o.slug ?? o.id}</Link>
                   </td>
                   <td>{o.expires_at ? new Date(o.expires_at).toLocaleString("pt-BR") : "—"}</td>
+                  <td>{cli.periodo} / {cli.total}</td>
                   <td>
                     <OfertasActions id={o.id} statusAtual="expired" />
                   </td>
@@ -195,7 +220,7 @@ export default async function DashboardV3({
             })}
             {(expiradasRecentes ?? []).length === 0 && (
               <tr>
-                <td colSpan={3}>Nenhuma expirada. O cron expira sozinho às 9h30.</td>
+                <td colSpan={4}>Nenhuma expirada. O cron expira sozinho às 9h30.</td>
               </tr>
             )}
           </tbody>
