@@ -78,7 +78,7 @@ export async function POST(req: Request) {
         .eq("id", item.product_id)
         .maybeSingle();
       const imagem = prod && /^https:\/\//i.test(prod.image || "") ? prod.image : null;
-      if (tipo !== "texto" && imagem) {
+      if (tipo !== "texto" && imagem && prod) {
         const legenda = montarLegendaImagem({
           title: prod.title,
           price: Number(prod.price),

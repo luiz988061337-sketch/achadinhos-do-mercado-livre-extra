@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { resumoPrecos } from "@/lib/v3-score";
-import { ROTULO_NIVEL } from "@/lib/v3-types";
+import { ROTULO_NIVEL, type ScoreLevel } from "@/lib/v3-types";
 import BlocoPrecos from "@/components/BlocoPrecos";
 import ShareButtons from "@/components/ShareButtons";
 import RegistradorView from "@/components/RegistradorView";
@@ -137,7 +137,7 @@ export default async function OfertaPage({
       )}
       <p style={{ fontSize: 13 }}>
         📊 Score interno AchadinhosBR: <strong>{offer.score}/100</strong> —{" "}
-        {ROTULO_NIVEL[offer.score_level]} (métrica interna, não é garantia de menor preço)
+        {ROTULO_NIVEL[offer.score_level as ScoreLevel]} (métrica interna, não é garantia de menor preço)
       </p>
 
       <p>

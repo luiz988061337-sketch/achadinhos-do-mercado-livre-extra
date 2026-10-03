@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     }
   }
 
-  const oldPrice = body.old_price != null && body.old_price !== "" ? Number(body.old_price) : null;
+  const oldPrice = body.old_price != null && String(body.old_price) !== "" ? Number(body.old_price) : null;
   const price = Number(body.price);
   const desconto =
     oldPrice != null && oldPrice > 0 && oldPrice > price
