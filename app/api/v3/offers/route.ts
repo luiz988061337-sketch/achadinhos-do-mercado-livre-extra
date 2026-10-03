@@ -160,6 +160,11 @@ export async function PATCH(req: Request) {
       }
       if (!atual.published_at && !patch.published_at) patch.published_at = new Date().toISOString();
     }
+    // Reativar expirada em 1 clique: expired → draft limpa o vencimento passado,
+    // salvo se o admin já informou outro expires_at no mesmo PATCH.
+    if (atual.status === "expired" && novoStatus === "draft" && patch.expires_at === undefined) {
+      patch.expires_at = null;
+    }
     patch.status = novoStatus;
   }
 

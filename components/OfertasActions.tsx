@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 // Ações do ciclo de vida da oferta (transições validadas no servidor).
 const ACOES: { status: string; rotulo: string; confirma?: string }[] = [
+  { status: "draft", rotulo: "♻️ Reativar" },
   { status: "approved", rotulo: "✅ Aprovar" },
   { status: "published", rotulo: "🚀 Publicar" },
   { status: "approved", rotulo: "⏸️ Pausar", confirma: "Pausar? A oferta sai do site e volta para aprovada." },
@@ -59,9 +60,12 @@ export default function OfertasActions({
 
   // Pausar só faz sentido em publicada; aprovar/publicar conforme o estado.
   const visiveis = ACOES.filter((a) => {
+    if (a.rotulo.startsWith("♻️")) return statusAtual === "expired" || statusAtual === "rejected";
     if (a.rotulo.startsWith("⏸️")) return statusAtual === "published";
     if (a.rotulo.startsWith("🚀")) return statusAtual === "approved";
     if (a.rotulo.startsWith("✅")) return statusAtual === "draft" || statusAtual === "pending";
+    if (a.rotulo.startsWith("⌛")) return statusAtual !== "expired";
+    if (a.rotulo.startsWith("❌")) return statusAtual !== "rejected" && statusAtual !== "published";
     return true;
   });
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import OfertasActions from "@/components/OfertasActions";
 
 function brl(v: number): string {
   return Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -174,6 +175,7 @@ export default async function DashboardV3({
             <tr>
               <th>Oferta</th>
               <th>Expirou em</th>
+              <th>Ação</th>
             </tr>
           </thead>
           <tbody>
@@ -185,12 +187,15 @@ export default async function DashboardV3({
                     <Link href={`/admin/ofertas/${o.id}`}>{titulo ?? o.slug ?? o.id}</Link>
                   </td>
                   <td>{o.expires_at ? new Date(o.expires_at).toLocaleString("pt-BR") : "—"}</td>
+                  <td>
+                    <OfertasActions id={o.id} statusAtual="expired" />
+                  </td>
                 </tr>
               );
             })}
             {(expiradasRecentes ?? []).length === 0 && (
               <tr>
-                <td colSpan={2}>Nenhuma expirada. O cron expira sozinho às 9h30.</td>
+                <td colSpan={3}>Nenhuma expirada. O cron expira sozinho às 9h30.</td>
               </tr>
             )}
           </tbody>
