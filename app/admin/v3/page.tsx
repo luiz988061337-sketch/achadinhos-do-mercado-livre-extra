@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import OfertasActions from "@/components/OfertasActions";
+import RenovarExpiradas from "@/components/RenovarExpiradas";
 
 function brl(v: number): string {
   return Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -110,6 +111,7 @@ export default async function DashboardV3({
   const resultado = comissaoAprovada - investimento;
 
   // Cliques por expirada (período + total) para priorizar a reativação.
+  // Ordena por cliques no período (depois total) — mais quente primeiro.
   const idsExpiradas = ((expiradasRecentes ?? []) as { id: string }[]).map((o) => o.id);
   const cliquesExpiradas = new Map<string, { periodo: number; total: number }>();
   if (idsExpiradas.length > 0) {
@@ -130,6 +132,14 @@ export default async function DashboardV3({
       cliquesExpiradas.set(c.offer_id, e);
     }
   }
+
+  type ExpiradaLinha = { id: string; slug: string | null; updated_at: string; expires_at: string | null; products: { title: string } | { title: string }[] | null };
+  const expiradasOrdenadas = (((expiradasRecentes ?? []) as ExpiradaLinha[]).slice()).sort((a, b) => {
+    const ca = cliquesExpiradas.get(a.id) ?? { periodo: 0, total: 0 };
+    const cb = cliquesExpiradas.get(b.id) ?? { periodo: 0, total: 0 };
+    return cb.periodo - ca.periodo || cb.total - ca.total;
+  });
+  const topRenovar = expiradasOrdenadas.slice(0, 3).map((o) => o.id);
 
   const cards: { rotulo: string; valor: string; detalhe?: string }[] = [
     { rotulo: "VISITANTES", valor: String(sessoes.size), detalhe: `${periodo}d (sessões com clique)` },
@@ -191,6 +201,9 @@ export default async function DashboardV3({
       </div>
 
       <h2>Expiradas recentes</h2>
+      <p style={{ fontSize: 13 }}>
+        Ordenadas por cliques no período — renove as mais quentes. <RenovarExpiradas ids={topRenovar} />
+      </p>
       <div className="tableWrap">
         <table className="table">
           <thead>
@@ -202,7 +215,7 @@ export default async function DashboardV3({
             </tr>
           </thead>
           <tbody>
-            {((expiradasRecentes ?? []) as { id: string; slug: string | null; updated_at: string; expires_at: string | null; products: { title: string } | { title: string }[] | null }[]).map((o) => {
+            {(expiradasOrdenadas as { id: string; slug: string | null; updated_at: string; expires_at: string | null; products: { title: string } | { title: string }[] | null }[]).map((o) => {
               const titulo = Array.isArray(o.products) ? o.products[0]?.title : o.products?.title;
               const cli = cliquesExpiradas.get(o.id) ?? { periodo: 0, total: 0 };
               return (
