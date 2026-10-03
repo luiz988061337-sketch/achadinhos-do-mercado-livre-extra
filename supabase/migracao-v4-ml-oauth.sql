@@ -1,8 +1,8 @@
-// Tokens OAuth do Mercado Livre (fluxo authorization_code, conta do lojista).
-// A busca de anúncios (/sites/MLB/search) exige user token — app token não basta.
-// 1. Admin clica "Conectar" → autoriza no ML → callback salva aqui.
-// 2. O servidor renova sozinho via refresh_token (dura ~6 meses).
-// Tabela só-admin (RLS). Nunca exponha estes tokens no frontend.
+-- Tokens OAuth do Mercado Livre (fluxo authorization_code, conta do lojista).
+-- A busca de anúncios (/sites/MLB/search) exige user token — app token não basta.
+-- 1. Admin clica "Conectar" → autoriza no ML → callback salva aqui.
+-- 2. O servidor renova sozinho via refresh_token (dura ~6 meses).
+-- Tabela só-admin (RLS). Nunca exponha estes tokens no frontend.
 
 create table if not exists public.ml_tokens (
   id bigint generated always as identity primary key,

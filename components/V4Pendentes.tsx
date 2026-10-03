@@ -12,7 +12,7 @@ export default function V4Pendentes({ iniciais }: { iniciais: V4Product[] }) {
   const [precos, setPrecos] = useState<Record<string, string>>({});
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState("");
-  const [ultimoAprovado, setUltimoAprovado] = useState<{ id: string; titulo: string } | null>(null);
+  const [ultimoAprovado, setUltimoAprovado] = useState<{ id: string; titulo: string; offer_id: string | null; offer_slug: string | null } | null>(null);
 
   async function acao(id: string, action: "approve" | "reject" | "queue") {
     setMsg("");
@@ -35,15 +35,15 @@ export default function V4Pendentes({ iniciais }: { iniciais: V4Product[] }) {
     if (action === "reject") {
       setMsg("Rejeitado.");
     } else {
-      setMsg(action === "queue" ? "Publicado + fila WhatsApp. ✅" : "Publicado. ✅");
-      if (alvo) setUltimoAprovado({ id: alvo.id, titulo: alvo.title });
+      setMsg(action === "queue" ? "Publicado + fila WhatsApp. ✅ Oferta rascunho criada." : "Publicado. ✅ Oferta rascunho criada.");
+      if (alvo) setUltimoAprovado({ id: alvo.id, titulo: alvo.title, offer_id: (j.offer_id as string) ?? null, offer_slug: (j.offer_slug as string) ?? null });
     }
   }
 
-  if (lista.length === 0) return <p className="notice">{msg || "Nada pendente. 🎉"}{msg ? ` ${msg}` : ""}{ultimoAprovado ? <> <Link href={`/admin/ofertas/nova?product_id=${ultimoAprovado.id}`}>🏷️ Criar oferta V3</Link></> : null}</p>;
+  if (lista.length === 0) return <p className="notice">{msg || "Nada pendente. 🎉"}{msg ? ` ${msg}` : ""}{ultimoAprovado ? <> {ultimoAprovado.offer_id ? <Link href={`/admin/ofertas/${ultimoAprovado.offer_id}`}>🏷️ Abrir oferta V3</Link> : <Link href={`/admin/ofertas/nova?product_id=${ultimoAprovado.id}`}>🏷️ Criar oferta V3</Link>}</> : null}</p>;
 
   return <div>
-    {msg ? <p className="notice">{msg}{ultimoAprovado ? <> <Link href={`/admin/ofertas/nova?product_id=${ultimoAprovado.id}`}>🏷️ Criar oferta V3 de “{ultimoAprovado.titulo.slice(0, 60)}”</Link></> : null}</p> : null}
+    {msg ? <p className="notice">{msg}{ultimoAprovado ? <> {ultimoAprovado.offer_id ? <Link href={`/admin/ofertas/${ultimoAprovado.offer_id}`}>🏷️ Abrir oferta V3 de “{ultimoAprovado.titulo.slice(0, 60)}”</Link> : <Link href={`/admin/ofertas/nova?product_id=${ultimoAprovado.id}`}>🏷️ Criar oferta V3 de “{ultimoAprovado.titulo.slice(0, 60)}”</Link>}</> : null}</p> : null}
     <div className="tableWrap"><table className="table">
       <thead><tr><th>Foto</th><th>Oferta</th><th>Loja</th><th>Score</th><th>Preço R$</th><th>Link oferta</th><th>Affiliate oficial</th><th>Ações</th></tr></thead>
       <tbody>

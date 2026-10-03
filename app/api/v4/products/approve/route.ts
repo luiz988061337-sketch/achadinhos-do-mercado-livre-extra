@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { exigirAdmin, ehErroResponse } from "@/lib/v4-guard";
 import { montarMensagemOferta } from "@/lib/whatsapp";
 import { calcularScore, descontoEfetivo } from "@/lib/score";
+import { gerarSlugOferta } from "@/lib/v3-types";
 
 // POST /api/v4/products/approve { id, action: "approve"|"reject"|"queue", affiliate_url?, price?, url? }
 // - approve: exige preço>0, url https e affiliate_url oficial → approved (score recalculado).
@@ -56,7 +57,8 @@ export async function POST(req: Request) {
     if ("erro" in c) return NextResponse.json({ error: c.erro }, { status: 422 });
     const { error } = await supabase.from("products").update({ status: "approved", affiliate_url: c.aff, url: c.link, price: c.preco, old_price: c.old, discount: c.desc, score: c.score }).eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ ok: true, status: "approved" });
+    const oferta = await garantirOfertaDraft(supabase, id, p.title, c.preco, c.old);
+    return NextResponse.json({ ok: true, status: "approved", offer_id: oferta?.id ?? null, offer_slug: oferta?.slug ?? null });
   }
 
   // queue: exige affiliate (aprovado ou aprovando agora) + cria fila + log
@@ -74,5 +76,43 @@ export async function POST(req: Request) {
     .single();
   if (errFila) return NextResponse.json({ error: errFila.message }, { status: 500 });
   await supabase.from("whatsapp_logs").insert({ queue_id: fila.id, product_id: id, action: "queued", result: "Adicionado à fila pelo painel." });
-  return NextResponse.json({ ok: true, status: "approved", queued: fila.id });
+  const oferta = await garantirOfertaDraft(supabase, id, p.title, c.preco, c.old);
+  return NextResponse.json({ ok: true, status: "approved", queued: fila.id, offer_id: oferta?.id ?? null, offer_slug: oferta?.slug ?? null });
+}
+
+// Garante 1 oferta V3 em draft para o produto aprovado (evita "página não existe").
+// Se já existe oferta (qualquer status), reaproveita a mais recente. Nunca quebra a aprovação.
+async function garantirOfertaDraft(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  product_id: string,
+  title: string,
+  current_price: number,
+  old_price: number | null
+): Promise<{ id: string; slug: string | null } | null> {
+  try {
+    const { data: existente } = await supabase
+      .from("offers")
+      .select("id, slug")
+      .eq("product_id", product_id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existente?.id) return existente;
+    const { data: criada, error } = await supabase
+      .from("offers")
+      .insert({
+        product_id,
+        slug: gerarSlugOferta(title || "oferta"),
+        old_price: old_price,
+        current_price,
+        status: "draft",
+      })
+      .select("id, slug")
+      .single();
+    if (error || !criada) return null;
+    return criada;
+  } catch {
+    return null;
+  }
 }
