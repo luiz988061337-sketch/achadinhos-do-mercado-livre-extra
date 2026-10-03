@@ -27,6 +27,16 @@ export default async function AdminV4() {
   const mpCount = new Map<string, number>();
   for (const p of porMp ?? []) mpCount.set(p.marketplace, (mpCount.get(p.marketplace) ?? 0) + 1);
 
+  // Status da oferta V3 por produto (para o painel mostrar se já tem /oferta).
+  const topIds = ((top ?? []) as { id: string }[]).map((p) => p.id);
+  let ofertaPorProduto = new Map<string, { slug: string | null; status: string; id: string }>();
+  if (topIds.length > 0) {
+    const { data: offers } = await supabase.from("offers").select("id, product_id, slug, status, created_at").in("product_id", topIds).order("created_at", { ascending: false });
+    for (const o of (offers ?? []) as { id: string; product_id: string; slug: string | null; status: string }[]) {
+      if (!ofertaPorProduto.has(o.product_id)) ofertaPorProduto.set(o.product_id, { slug: o.slug, status: o.status, id: o.id });
+    }
+  }
+
   // Comissão potencial = soma das comissões unitárias dos aprovados (estimativa).
   const comList = (comissoes ?? []) as { id: string; title: string; marketplace: string; price: number; commission: number; commission_rate: number | null }[];
   const totalComissao = comList.reduce((s, p) => s + Number(p.commission || 0), 0);
@@ -51,11 +61,13 @@ export default async function AdminV4() {
     </div>
 
     <h2>⭐ Melhores ofertas por score</h2>
-    <div className="tableWrap"><table className="table"><thead><tr><th>Título</th><th>Loja</th><th>Score</th><th>Preço</th></tr></thead>
+    <div className="tableWrap"><table className="table"><thead><tr><th>Título</th><th>Loja</th><th>Score</th><th>Preço</th><th>Oferta V3</th></tr></thead>
       <tbody>
-        {(top ?? []).map((p: { id: string; title: string; marketplace: string; score: number; price: number }) =>
-          <tr key={p.id}><td>{p.title}</td><td>{p.marketplace}</td><td>⭐ {p.score}</td><td>R$ {Number(p.price).toFixed(2)}</td></tr>)}
-        {(top ?? []).length === 0 && <tr><td colSpan={4}>Nenhum produto aprovado ainda. Vá em Pesquisar.</td></tr>}
+        {(top ?? []).map((p: { id: string; title: string; marketplace: string; score: number; price: number }) => {
+          const of = ofertaPorProduto.get(p.id);
+          return <tr key={p.id}><td>{p.title}</td><td>{p.marketplace}</td><td>⭐ {p.score}</td><td>R$ {Number(p.price).toFixed(2)}</td><td>{of ? <><a href={`/admin/ofertas/${of.id}`}>{of.status}{of.slug ? ` · /${of.slug.slice(0, 20)}` : ""}</a></> : <a href={`/admin/ofertas/nova?product_id=${p.id}`}>➕ criar</a>}</td></tr>;
+        })}
+        {(top ?? []).length === 0 && <tr><td colSpan={5}>Nenhum produto aprovado ainda. Vá em Pesquisar.</td></tr>}
       </tbody></table></div>
 
     <h2>💰 Comissões (estimativa)</h2>

@@ -70,7 +70,7 @@ export default async function Ofertas({ searchParams }: { searchParams: Promise<
   // A saída acontece em /oferta/[slug] pelo botão consciente. Com busca (?q),
   // filtra pelo título do produto (join não permite ilike direto).
   type OfertaVitrine = {
-    slug: string | null; current_price: number; old_price: number | null;
+    slug: string | null; product_id: string; current_price: number; old_price: number | null;
     discount_percentage: number; coupon_code: string | null; score: number;
     score_level: "EXCELENTE" | "BOA" | "NORMAL" | "NAO_RECOMENDADA";
     title: string; image: string; rating: number | null; reviews: number | null;
@@ -86,7 +86,7 @@ export default async function Ofertas({ searchParams }: { searchParams: Promise<
     if (!q || (idsProdutos && idsProdutos.length > 0)) {
       let v3qry = supabase
         .from("offers")
-        .select("slug, current_price, old_price, discount_percentage, coupon_code, score, score_level, products(title, image, rating, reviews)")
+        .select("slug, product_id, current_price, old_price, discount_percentage, coupon_code, score, score_level, products(title, image, rating, reviews)")
         .eq("status", "published")
         .or(`expires_at.is.null,expires_at.gt.${agora}`)
         .order("featured", { ascending: false })
@@ -100,6 +100,7 @@ export default async function Ofertas({ searchParams }: { searchParams: Promise<
         const p = Array.isArray(o.products) ? o.products[0] : o.products;
         return {
           slug: o.slug,
+          product_id: (o as unknown as { product_id: string }).product_id,
           current_price: Number(o.current_price),
           old_price: o.old_price != null ? Number(o.old_price) : null,
           discount_percentage: o.discount_percentage,
@@ -113,6 +114,12 @@ export default async function Ofertas({ searchParams }: { searchParams: Promise<
         };
       }).filter((o) => o.slug && o.title);
     }
+  }
+
+  // Prioriza V3: remove da vitrine V4 os produtos que já têm oferta publicada (evita duplicar).
+  if (v3lista.length > 0 && v4lista.length > 0) {
+    const comOferta = new Set(v3lista.map((o) => o.product_id));
+    v4lista = v4lista.filter((p) => !comOferta.has(p.id));
   }
 
   return <div className="container">
@@ -135,19 +142,19 @@ export default async function Ofertas({ searchParams }: { searchParams: Promise<
       <div className="actions" style={{ marginTop: 0 }}><button className="secondary" type="submit">Aplicar</button></div>
     </form>
     <div className="products">{lista.map((p) => <ProductCard key={p.id} produto={p} />)}</div>
-    {v4lista.length > 0 ? <>
-      <div className="pageTitle" style={{ marginTop: 24 }}>
-        <h2>🆕 Novas ofertas (ML + Shopee) — aprovadas</h2>
-        <p>Rastreamento via /ver · score 0-100 · somente aprovadas aparecem aqui.</p>
-      </div>
-      <div className="products">{v4lista.map((p) => <ProductCardV4 key={p.id} produto={p} />)}</div>
-    </> : null}
     {v3lista.length > 0 ? <>
       <div className="pageTitle" style={{ marginTop: 24 }}>
         <h2>🔥 Ofertas de hoje</h2>
         <p>Curadoria AchadinhosBR · score 0-100 · saída consciente em cada oferta.</p>
       </div>
       <div className="products">{v3lista.map((o) => <OfertaCard key={o.slug} offer={o} />)}</div>
+    </> : null}
+    {v4lista.length > 0 ? <>
+      <div className="pageTitle" style={{ marginTop: 24 }}>
+        <h2>🆕 Novas ofertas (ML + Shopee) — aprovadas</h2>
+        <p>Rastreamento via /ver · score 0-100 · somente aprovadas sem oferta publicada.</p>
+      </div>
+      <div className="products">{v4lista.map((p) => <ProductCardV4 key={p.id} produto={p} />)}</div>
     </> : null}
     {totalPaginas > 1 ? <nav className="pager" aria-label="Paginação">
       {pag > 1 ? <Link className="secondary" style={{ textDecoration: "none" }} href={hrefLista("/ofertas", { ...comuns, pagina: String(pag - 1) })}>← Anterior</Link> : null}
