@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-type Achado = { id: string; titulo: string; preco: number; imagem: string; fonte: string };
+type Achado = { id: string; titulo: string; preco: number; imagem: string; fonte: string; oferta_slug?: string | null };
 
 // Seletor da comparação: busca no site, adiciona até 3 via ?ids= na URL.
 export default function CompararSeletor({ selecionados }: { selecionados: string[] }) {
@@ -41,6 +41,7 @@ export default function CompararSeletor({ selecionados }: { selecionados: string
         <div className="cardBody">
           <div className="cardTitle">{a.titulo}</div>
           <div className="price">R$ {Number(a.preco).toFixed(2)}</div>
+          {a.oferta_slug ? <div style={{ fontSize: 12 }}>🔥 Tem oferta publicada</div> : null}
           <button className={on ? "danger" : "secondary"} onClick={() => alternar(a.id)} disabled={!on && selecionados.length >= 3}>
             {on ? "✖ Remover" : "➕ Comparar"}
           </button>
