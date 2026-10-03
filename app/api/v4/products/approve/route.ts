@@ -83,8 +83,7 @@ export async function POST(req: Request) {
 // Garante 1 oferta V3 em draft para o produto aprovado (evita "página não existe").
 // Se já existe oferta (qualquer status), reaproveita a mais recente. Nunca quebra a aprovação.
 async function garantirOfertaDraft(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
+  supabase: Awaited<ReturnType<typeof createClient>>,
   product_id: string,
   title: string,
   current_price: number,

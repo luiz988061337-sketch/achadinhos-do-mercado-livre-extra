@@ -200,8 +200,7 @@ export async function DELETE(req: Request) {
 }
 
 // Recalcula score/score_level com dados reais (produto + histórico + oferta).
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function recalcularScore(supabase: any, offerId: string) {
+async function recalcularScore(supabase: Awaited<ReturnType<typeof createClient>>, offerId: string) {
   try {
     const { data: offer } = await supabase.from("offers").select("*").eq("id", offerId).single();
     if (!offer) return;
