@@ -10,6 +10,9 @@ export default function AdminNav() {
     <Link href="/admin/v4/pesquisar">🔎 V4 Pesquisar</Link>
     <Link href="/admin/v4/pendentes">✅ V4 Aprovação</Link>
     <Link href="/admin/v4/whatsapp">💬 V4 WhatsApp</Link>
+    <Link href="/admin/ofertas">🏷️ Ofertas V3</Link>
+    <Link href="/admin/v3">📊 Dashboard V3</Link>
+    <Link href="/admin/distribuicao">📣 Distribuição</Link>
     <form action="/auth/signout" method="post"><button className="secondary" type="submit">Sair</button></form>
   </nav>;
 }
