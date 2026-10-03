@@ -40,6 +40,8 @@ export default async function DashboardV3({
     { data: fila },
     { data: comissoes },
     { data: campanhas },
+    { count: expiradasPeriodo },
+    { data: expiradasRecentes },
   ] = await Promise.all([
     supabase.from("offers").select("*", { count: "exact", head: true }),
     supabase.from("offers").select("*", { count: "exact", head: true }).eq("status", "published"),
@@ -52,6 +54,8 @@ export default async function DashboardV3({
     supabase.from("whatsapp_queue").select("status"),
     supabase.from("commission_records").select("amount, status"),
     supabase.from("campaigns").select("budget, active"),
+    supabase.from("offers").select("*", { count: "exact", head: true }).eq("status", "expired").gte("updated_at", inicio),
+    supabase.from("offers").select("id, slug, updated_at, expires_at, products(title)").eq("status", "expired").order("updated_at", { ascending: false }).limit(10),
   ]);
 
   const sessoes = new Set(
@@ -108,6 +112,7 @@ export default async function DashboardV3({
     { rotulo: "VISITANTES", valor: String(sessoes.size), detalhe: `${periodo}d (sessões com clique)` },
     { rotulo: "CLIQUES", valor: String(cliques ?? 0), detalhe: `hoje: ${cliquesHoje ?? 0} · views: ${views ?? 0}` },
     { rotulo: "OFERTAS", valor: `${publicadas ?? 0} publicadas`, detalhe: `${aguardando ?? 0} aguardando · ${totalOfertas ?? 0} total` },
+    { rotulo: "EXPIRADAS", valor: String(expiradasPeriodo ?? 0), detalhe: `no período ${periodo}d (cron expira sozinho)` },
     { rotulo: "WHATSAPP", valor: `${wa.sent} enviados`, detalhe: `${wa.queued} na fila · ${wa.failed} falharam` },
     { rotulo: "COMISSÃO", valor: brl(comissaoAprovada), detalhe: `pendente: ${brl(comissaoPendente)} (manual)` },
     { rotulo: "INVESTIMENTO", valor: brl(investimento), detalhe: "orçamento campanhas ativas" },
@@ -156,6 +161,36 @@ export default async function DashboardV3({
             {topOfertas.length === 0 && (
               <tr>
                 <td colSpan={2}>Sem cliques no período.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Expiradas recentes</h2>
+      <div className="tableWrap">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Oferta</th>
+              <th>Expirou em</th>
+            </tr>
+          </thead>
+          <tbody>
+            {((expiradasRecentes ?? []) as { id: string; slug: string | null; updated_at: string; expires_at: string | null; products: { title: string } | { title: string }[] | null }[]).map((o) => {
+              const titulo = Array.isArray(o.products) ? o.products[0]?.title : o.products?.title;
+              return (
+                <tr key={o.id}>
+                  <td>
+                    <Link href={`/admin/ofertas/${o.id}`}>{titulo ?? o.slug ?? o.id}</Link>
+                  </td>
+                  <td>{o.expires_at ? new Date(o.expires_at).toLocaleString("pt-BR") : "—"}</td>
+                </tr>
+              );
+            })}
+            {(expiradasRecentes ?? []).length === 0 && (
+              <tr>
+                <td colSpan={2}>Nenhuma expirada. O cron expira sozinho às 9h30.</td>
               </tr>
             )}
           </tbody>

@@ -16,11 +16,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
     const cats = categorias.map((c) => ({ url: `${BASE}/categoria/${c.slug}`, lastModified: new Date() }));
     // V3: ofertas publicadas e não expiradas (só com slug) — aditivo, não remove nada.
+    // Blindagem dupla: filtra no SQL e de novo no JS (cron pode ainda não ter expirado).
     let ofertas: { url: string; lastModified: Date }[] = [];
     try {
-      const { data: ofs } = await supabase.from("offers").select("slug, updated_at").eq("status", "published").or("expires_at.is.null,expires_at.gt." + new Date().toISOString()).limit(1000);
-      ofertas = ((ofs ?? []) as { slug: string | null; updated_at: string }[])
-        .filter((o) => o.slug)
+      const agora = new Date();
+      const { data: ofs } = await supabase.from("offers").select("slug, updated_at, expires_at").eq("status", "published").or("expires_at.is.null,expires_at.gt." + agora.toISOString()).limit(1000);
+      ofertas = ((ofs ?? []) as { slug: string | null; updated_at: string; expires_at: string | null }[])
+        .filter((o) => o.slug && (o.expires_at == null || new Date(o.expires_at).getTime() > agora.getTime()))
         .map((o) => ({ url: `${BASE}/oferta/${o.slug}`, lastModified: new Date(o.updated_at) }));
     } catch {
       ofertas = [];
