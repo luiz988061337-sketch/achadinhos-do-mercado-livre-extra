@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import BotaoEnviarWA from "@/components/BotaoEnviarWA";
 import BotaoCancelarWA from "@/components/BotaoCancelarWA";
+import BotaoManualWA from "@/components/BotaoManualWA";
+import { whatsappConfigurado } from "@/lib/whatsapp";
 
 // Fila WhatsApp V4 — curadoria humana, envio só via API oficial.
 // Sem automação não oficial (risco de bloqueio).
@@ -15,10 +17,14 @@ export default async function WhatsappPage() {
   const filaLista = (fila ?? []) as unknown as { id: string; status: string; message: string | null; created_at: string; sent_at: string | null; product_id: string; products: { title: string } | { title: string }[] | null }[];
   const logsLista = (logs ?? []) as unknown as { id: number; action: string; result: string | null; error: string | null; created_at: string }[];
   const pendentes = filaLista.filter((q) => q.status === "queued" || q.status === "failed").length;
+  const manual = !whatsappConfigurado();
 
   return <>
     <h1>💬 Fila WhatsApp (V4)</h1>
     <p>Envio somente pela <strong>API oficial</strong> (WhatsApp Business/Cloud). Sem ela, o item fica na fila com log.</p>
+    {manual ? (
+      <div className="notice" role="status">📋 <strong>MODO MANUAL ATIVO</strong> — Cloud API não conectada. Copie a mensagem de cada item e cole no grupo/número (botões 📋 Copiar / wa.me). Os links do site com <em>?origem=ACHADINHOS_WHATSAPP</em> continuam medindo cliques. Envio automático 1:1 desabilitado.</div>
+    ) : null}
     <div className="notice">Configure no servidor: WHATSAPP_ACCESS_TOKEN + WHATSAPP_PHONE_ID (+ opcional WHATSAPP_TEST_TO para testes). Quedas de preço de aprovados entram sozinhas via cron 9h30 (log <em>price_drop_queued</em>). {pendentes > 0 ? <><strong>{pendentes} aguardando envio.</strong></> : "Nada pendente 🎉"}</div>
 
     <h2>📥 Na fila / histórico</h2>
@@ -33,7 +39,7 @@ export default async function WhatsappPage() {
             <td style={{ fontSize: 12 }}>{new Date(q.created_at).toLocaleString("pt-BR")}{q.sent_at ? <><br />📤 {new Date(q.sent_at).toLocaleString("pt-BR")}</> : null}</td>
             <td style={{ maxWidth: 320, fontSize: 12 }}>{(q.message || "").slice(0, 160)}</td>
             <td>{q.status === "queued" || q.status === "failed"
-              ? <span style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><BotaoEnviarWA queueId={q.id} /><BotaoCancelarWA queueId={q.id} /></span>
+              ? <span style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}><BotaoManualWA message={q.message || ""} /><BotaoEnviarWA queueId={q.id} /><BotaoCancelarWA queueId={q.id} /></span>
               : <span style={{ fontSize: 12 }}>—</span>}</td>
           </tr>;
         })}
