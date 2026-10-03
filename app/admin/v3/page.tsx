@@ -44,6 +44,7 @@ export default async function DashboardV3({
     { data: campanhas },
     { count: expiradasPeriodo },
     { data: expiradasRecentes },
+    { data: vencendo },
   ] = await Promise.all([
     supabase.from("offers").select("*", { count: "exact", head: true }),
     supabase.from("offers").select("*", { count: "exact", head: true }).eq("status", "published"),
@@ -58,6 +59,7 @@ export default async function DashboardV3({
     supabase.from("campaigns").select("budget, active"),
     supabase.from("offers").select("*", { count: "exact", head: true }).eq("status", "expired").gte("updated_at", inicio),
     supabase.from("offers").select("id, slug, updated_at, expires_at, products(title)").eq("status", "expired").order("updated_at", { ascending: false }).limit(10),
+    supabase.from("offers").select("id, slug, expires_at, products(title)").eq("status", "published").not("expires_at", "is", null).gt("expires_at", new Date().toISOString()).lt("expires_at", new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()).order("expires_at", { ascending: true }).limit(10),
   ]);
 
   const sessoes = new Set(
@@ -194,6 +196,38 @@ export default async function DashboardV3({
             {topOfertas.length === 0 && (
               <tr>
                 <td colSpan={2}>Sem cliques no período.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <h2>⚠️ Vencendo em 7 dias</h2>
+      <div className="tableWrap">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Oferta</th>
+              <th>Vence em</th>
+              <th>Cliques {periodo}d</th>
+            </tr>
+          </thead>
+          <tbody>
+            {((vencendo ?? []) as { id: string; slug: string | null; expires_at: string | null; products: { title: string } | { title: string }[] | null }[]).map((o) => {
+              const titulo = Array.isArray(o.products) ? o.products[0]?.title : o.products?.title;
+              return (
+                <tr key={o.id}>
+                  <td>
+                    <Link href={`/admin/ofertas/${o.id}`}>{titulo ?? o.slug ?? o.id}</Link>
+                  </td>
+                  <td>{o.expires_at ? new Date(o.expires_at).toLocaleString("pt-BR") : "—"}</td>
+                  <td>{porOferta.get(o.id) ?? 0}</td>
+                </tr>
+              );
+            })}
+            {(vencendo ?? []).length === 0 && (
+              <tr>
+                <td colSpan={3}>Nada vencendo nos próximos 7 dias.</td>
               </tr>
             )}
           </tbody>
