@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import OfertasActions from "@/components/OfertasActions";
 import RenovarExpiradas from "@/components/RenovarExpiradas";
+import EstenderVencimento from "@/components/EstenderVencimento";
 
 function brl(v: number): string {
   return Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -210,6 +211,7 @@ export default async function DashboardV3({
               <th>Oferta</th>
               <th>Vence em</th>
               <th>Cliques {periodo}d</th>
+              <th>Estender</th>
             </tr>
           </thead>
           <tbody>
@@ -222,12 +224,15 @@ export default async function DashboardV3({
                   </td>
                   <td>{o.expires_at ? new Date(o.expires_at).toLocaleString("pt-BR") : "—"}</td>
                   <td>{porOferta.get(o.id) ?? 0}</td>
+                  <td>
+                    <EstenderVencimento id={o.id} />
+                  </td>
                 </tr>
               );
             })}
             {(vencendo ?? []).length === 0 && (
               <tr>
-                <td colSpan={3}>Nada vencendo nos próximos 7 dias.</td>
+                <td colSpan={4}>Nada vencendo nos próximos 7 dias.</td>
               </tr>
             )}
           </tbody>

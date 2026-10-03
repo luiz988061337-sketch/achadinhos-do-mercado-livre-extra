@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import OfertasActions from "@/components/OfertasActions";
+import PublicarLote from "@/components/PublicarLote";
 import { ROTULO_NIVEL, STATUS_OFERTA } from "@/lib/v3-types";
 
 // Lista de ofertas V3 (painel). Filtros por status; ações por linha.
@@ -33,7 +34,10 @@ export default async function OfertasPage({
     <>
       <h1>🏷️ Ofertas (V3)</h1>
       <p>
-        <Link href="/admin/ofertas/nova">➕ Nova oferta</Link>
+        <Link href="/admin/ofertas/nova">➕ Nova oferta</Link>{" "}
+        {(status === "draft" || status === "pending" || status === "approved") && lista.length > 0 ? (
+          <PublicarLote ids={lista.filter((o) => ["draft", "pending", "approved"].includes(o.status)).map((o) => o.id)} />
+        ) : null}
       </p>
       <p style={{ fontSize: 13 }}>
         Filtrar: <Link href="/admin/ofertas">todas</Link>{" "}
