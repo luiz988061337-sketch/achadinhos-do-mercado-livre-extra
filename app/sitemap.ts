@@ -15,10 +15,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: p.preco_atualizado_em ? new Date(p.preco_atualizado_em) : new Date()
     }));
     const cats = categorias.map((c) => ({ url: `${BASE}/categoria/${c.slug}`, lastModified: new Date() }));
-    // V3: ofertas publicadas (só com slug) — aditivo, não remove nada.
+    // V3: ofertas publicadas e não expiradas (só com slug) — aditivo, não remove nada.
     let ofertas: { url: string; lastModified: Date }[] = [];
     try {
-      const { data: ofs } = await supabase.from("offers").select("slug, updated_at").eq("status", "published").limit(1000);
+      const { data: ofs } = await supabase.from("offers").select("slug, updated_at").eq("status", "published").or("expires_at.is.null,expires_at.gt." + new Date().toISOString()).limit(1000);
       ofertas = ((ofs ?? []) as { slug: string | null; updated_at: string }[])
         .filter((o) => o.slug)
         .map((o) => ({ url: `${BASE}/oferta/${o.slug}`, lastModified: new Date(o.updated_at) }));

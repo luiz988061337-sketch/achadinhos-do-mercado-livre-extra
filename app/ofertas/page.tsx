@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
 import ProductCardV4 from "@/components/ProductCardV4";
+import OfertaCard from "@/components/OfertaCard";
 import { categorias } from "@/lib/categorias";
 import { createClient } from "@/lib/supabase/server";
 import { POR_PAGINA, ORDENACOES, lerOrdem, lerPagina, hrefLista } from "@/lib/listagem";
@@ -59,6 +60,55 @@ export default async function Ofertas({ searchParams }: { searchParams: Promise<
     v4lista = v4data ?? [];
   }
 
+  // V3: ofertas publicadas e não expiradas — vitrine na 1ª página, como a V4.
+  // A saída acontece em /oferta/[slug] pelo botão consciente. Com busca (?q),
+  // filtra pelo título do produto (join não permite ilike direto).
+  type OfertaVitrine = {
+    slug: string | null; current_price: number; old_price: number | null;
+    discount_percentage: number; coupon_code: string | null; score: number;
+    score_level: "EXCELENTE" | "BOA" | "NORMAL" | "NAO_RECOMENDADA";
+    title: string; image: string; rating: number | null; reviews: number | null;
+  };
+  let v3lista: OfertaVitrine[] = [];
+  if (pagina === 1) {
+    const agora = new Date().toISOString();
+    let idsProdutos: string[] | null = null;
+    if (q) {
+      const { data: prods } = await supabase.from("products").select("id").ilike("title", `%${q}%`).limit(100);
+      idsProdutos = (prods ?? []).map((p: { id: string }) => p.id);
+    }
+    if (!q || (idsProdutos && idsProdutos.length > 0)) {
+      let v3qry = supabase
+        .from("offers")
+        .select("slug, current_price, old_price, discount_percentage, coupon_code, score, score_level, products(title, image, rating, reviews)")
+        .eq("status", "published")
+        .or(`expires_at.is.null,expires_at.gt.${agora}`)
+        .order("featured", { ascending: false })
+        .order("score", { ascending: false })
+        .limit(12);
+      if (idsProdutos) v3qry = v3qry.in("product_id", idsProdutos);
+      const { data: v3data } = await v3qry;
+      v3lista = ((v3data ?? []) as unknown as (Omit<OfertaVitrine, "title" | "image" | "rating" | "reviews"> & {
+        products: { title: string; image: string; rating: number | null; reviews: number | null } | { title: string; image: string; rating: number | null; reviews: number | null }[] | null;
+      })[]).map((o) => {
+        const p = Array.isArray(o.products) ? o.products[0] : o.products;
+        return {
+          slug: o.slug,
+          current_price: Number(o.current_price),
+          old_price: o.old_price != null ? Number(o.old_price) : null,
+          discount_percentage: o.discount_percentage,
+          coupon_code: o.coupon_code,
+          score: o.score,
+          score_level: o.score_level,
+          title: p?.title ?? "",
+          image: p?.image ?? "",
+          rating: p?.rating != null ? Number(p.rating) : null,
+          reviews: p?.reviews != null ? Number(p.reviews) : null,
+        };
+      }).filter((o) => o.slug && o.title);
+    }
+  }
+
   return <div className="container">
     <div className="pageTitle">
       <h1>{q ? `🔎 Resultados para "${q}"` : "🔥 Ofertas de hoje"}</h1>
@@ -84,6 +134,13 @@ export default async function Ofertas({ searchParams }: { searchParams: Promise<
         <p>Rastreamento via /ver · score 0-100 · somente aprovadas aparecem aqui.</p>
       </div>
       <div className="products">{v4lista.map((p) => <ProductCardV4 key={p.id} produto={p} />)}</div>
+    </> : null}
+    {v3lista.length > 0 ? <>
+      <div className="pageTitle" style={{ marginTop: 24 }}>
+        <h2>🔥 Ofertas de hoje</h2>
+        <p>Curadoria AchadinhosBR · score 0-100 · saída consciente em cada oferta.</p>
+      </div>
+      <div className="products">{v3lista.map((o) => <OfertaCard key={o.slug} offer={o} />)}</div>
     </> : null}
     {totalPaginas > 1 ? <nav className="pager" aria-label="Paginação">
       {pag > 1 ? <Link className="secondary" style={{ textDecoration: "none" }} href={hrefLista("/ofertas", { ...comuns, pagina: String(pag - 1) })}>← Anterior</Link> : null}
