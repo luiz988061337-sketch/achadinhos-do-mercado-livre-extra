@@ -28,6 +28,7 @@ export default function BotaoEnviarWA({ queueId }: { queueId: string }) {
       const j = await r.json();
       if (j.ok) {
         setMsg(`Enviado ✅ (${j.via ?? "texto"})`);
+        setTimeout(() => window.location.reload(), 800);
       } else {
         setMsg(j.error || j.aviso || "Falhou");
       }
