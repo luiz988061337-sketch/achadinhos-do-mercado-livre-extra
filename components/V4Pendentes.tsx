@@ -1,21 +1,26 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import type { V4Product } from "@/lib/v4-types";
 
 // Lista pending com ações: publicar (preço + links oficiais), rejeitar, fila WhatsApp.
+// Após publicar, oferece o atalho para criar a oferta V3 do produto aprovado.
 export default function V4Pendentes({ iniciais }: { iniciais: V4Product[] }) {
   const [lista, setLista] = useState<V4Product[]>(iniciais);
   const [affs, setAffs] = useState<Record<string, string>>({});
   const [precos, setPrecos] = useState<Record<string, string>>({});
   const [urls, setUrls] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState("");
+  const [ultimoAprovado, setUltimoAprovado] = useState<{ id: string; titulo: string } | null>(null);
 
   async function acao(id: string, action: "approve" | "reject" | "queue") {
     setMsg("");
+    setUltimoAprovado(null);
     const affiliate_url = (affs[id] || "").trim() || undefined;
     const price = precos[id] !== undefined && precos[id] !== "" ? Number(precos[id]) : undefined;
     const url = (urls[id] || "").trim() || undefined;
+    const alvo = lista.find((p) => p.id === id);
     const r = await fetch("/api/v4/products/approve", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -27,13 +32,18 @@ export default function V4Pendentes({ iniciais }: { iniciais: V4Product[] }) {
       return;
     }
     setLista((l) => l.filter((p) => p.id !== id));
-    setMsg(action === "reject" ? "Rejeitado." : action === "queue" ? "Publicado + fila WhatsApp. ✅" : "Publicado. ✅");
+    if (action === "reject") {
+      setMsg("Rejeitado.");
+    } else {
+      setMsg(action === "queue" ? "Publicado + fila WhatsApp. ✅" : "Publicado. ✅");
+      if (alvo) setUltimoAprovado({ id: alvo.id, titulo: alvo.title });
+    }
   }
 
-  if (lista.length === 0) return <p className="notice">{msg || "Nada pendente. 🎉"}{msg ? ` ${msg}` : ""}</p>;
+  if (lista.length === 0) return <p className="notice">{msg || "Nada pendente. 🎉"}{msg ? ` ${msg}` : ""}{ultimoAprovado ? <> <Link href={`/admin/ofertas/nova?product_id=${ultimoAprovado.id}`}>🏷️ Criar oferta V3</Link></> : null}</p>;
 
   return <div>
-    {msg ? <p className="notice">{msg}</p> : null}
+    {msg ? <p className="notice">{msg}{ultimoAprovado ? <> <Link href={`/admin/ofertas/nova?product_id=${ultimoAprovado.id}`}>🏷️ Criar oferta V3 de “{ultimoAprovado.titulo.slice(0, 60)}”</Link></> : null}</p> : null}
     <div className="tableWrap"><table className="table">
       <thead><tr><th>Foto</th><th>Oferta</th><th>Loja</th><th>Score</th><th>Preço R$</th><th>Link oferta</th><th>Affiliate oficial</th><th>Ações</th></tr></thead>
       <tbody>

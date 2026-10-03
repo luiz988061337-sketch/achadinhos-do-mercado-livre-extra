@@ -21,17 +21,22 @@ function paraISO(v: string): string | null {
 }
 
 // Formulário de oferta (nova + edição). Status sai por OfertasActions.
+// produtoInicial: pré-seleção via ?product_id= (atalho da aprovação V4).
 export default function OfertaForm({
   offer,
   produtos,
+  produtoInicial,
 }: {
   offer?: Offer | null;
   produtos?: ProdutoOpcao[];
+  produtoInicial?: { id: string; preco: number } | null;
 }) {
   const editando = Boolean(offer?.id);
-  const [productId, setProductId] = useState(offer?.product_id ?? "");
+  const [productId, setProductId] = useState(offer?.product_id ?? produtoInicial?.id ?? "");
   const [oldPrice, setOldPrice] = useState(offer?.old_price != null ? String(offer.old_price) : "");
-  const [currentPrice, setCurrentPrice] = useState(offer ? String(offer.current_price) : "");
+  const [currentPrice, setCurrentPrice] = useState(
+    offer ? String(offer.current_price) : produtoInicial ? String(produtoInicial.preco) : ""
+  );
   const [couponCode, setCouponCode] = useState(offer?.coupon_code ?? "");
   const [couponValue, setCouponValue] = useState(offer?.coupon_value != null ? String(offer.coupon_value) : "");
   const [shipping, setShipping] = useState(offer?.shipping_price != null ? String(offer.shipping_price) : "");
